@@ -1,0 +1,78 @@
+{
+  "count": 12,
+  "items": [
+    {
+      "name": "Sos 2Hot2Handle",
+      "price": 19,
+      "orig": null,
+      "oos": false
+    },
+    {
+      "name": "Cartofi Prajiti",
+      "price": 22,
+      "orig": null,
+      "oos": false
+    },
+    {
+      "name": "Apa Plata 500ml",
+      "price": 9.5,
+      "orig": null,
+      "oos": false
+    },
+    {
+      "name": "Apa Minerala 500ml",
+      "price": 9.5,
+      "orig": null,
+      "oos": false
+    },
+    {
+      "name": "Pepsi Doza 330ml",
+      "price": 9.5,
+      "orig": null,
+      "oos": false
+    },
+    {
+      "name": "Pepsi Max Doza 330ml",
+      "price": 9.5,
+      "orig": null,
+      "oos": false
+    },
+    {
+      "name": "Pepsi Twist Doza 330ml",
+      "price": 9.5,
+      "orig": null,
+      "oos": false
+    },
+    {
+      "name": "Mirinda Doza 330ml",
+      "price": 9.5,
+      "orig": null,
+      "oos": false
+    },
+    {
+      "name": "7Up Doza 330ml",
+      "price": 9.5,
+      "orig": null,
+      "oos": false
+    },
+    {
+      "name": "Lipton Piersici Doza 330ml",
+      "price": 9.5,
+      "orig": null,
+      "oos": false
+    },
+    {
+      "name": "Lipton Lamaie Doza 330ml",
+      "price": 9.5,
+      "orig": null,
+      "oos": false
+    },
+    {
+      "name": "Salatā roșii  280g",
+      "price": 24,
+      "orig": null,
+      "oos": true
+    }
+  ],
+  "meta": null
+}

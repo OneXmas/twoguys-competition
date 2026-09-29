@@ -1,2 +1,8 @@
 # workbook exports are data snapshots, not source
 *.xlsx
+node_modules/
+.wrangler/
+.dev.vars
+.env
+# terminal log with account details
+bolt-worker/PowerShell.txt
