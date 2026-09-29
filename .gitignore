@@ -1,0 +1,2 @@
+# workbook exports are data snapshots, not source
+*.xlsx

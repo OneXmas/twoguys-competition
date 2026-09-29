@@ -1,0 +1,450 @@
+function FB_PRICE(restaurantUid, itemId) {
+  const key = 'fb_' + restaurantUid;
+  const cache = CacheService.getScriptCache();
+  let json = cache.get(key);
+  if (!json) {
+    json = UrlFetchApp.fetch('https://www.foodbooking.com/api/restaurant/' + restaurantUid + '/menu').getContentText();
+    cache.put(key, json, 1800); // 30 min – don't hammer their API
+  }
+  const menu = JSON.parse(json);
+  for (const cat of menu.categories) {
+    for (const it of cat.items) {
+      if (String(it.id) === String(itemId)) return it.price;
+    }
+  }
+  return 'NOT FOUND';
+}
+
+
+
+
+// TEST WOLT =WOLT_MENU("=WOLT_MENU("link")
+// TEST GLOVO =GLOVO_MENU("link")
+// TEST BOLT =BOLT_MENU("link")
+
+const BOLT_WORKER = 'https://bolt-menu.twoguys.workers.dev/';
+
+
+// ===== CONFIG =====
+const COMPETITORS = [
+  // own sites
+  { sheet: 'Burgerbrasov', nameCol: 'A', priceCol: 'B', fn: 'SITE_MENU', url: 'https://burgerbrasov.ro/' },
+  { sheet: 'Mypassage',    nameCol: 'A', priceCol: 'B', idCol: 'D', origCol: 'E', catCol: 'C', fn: 'WOO_MENU', url: 'https://mypassage.ro' },
+  // own platforms
+  { sheet: 'TwoGuys - G',  nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/two-guys-delivery' },
+  { sheet: 'TwoGuys - W',  nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU',  url: 'https://wolt.com/ro/rou/brasov/restaurant/two-guys-delivery-67dac8fa3d53c71097395624' },
+  { sheet: 'TwoGuys - B',  nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/110855-two-guys-delivery/', midday: true },
+  { sheet: 'TheSmash - G', nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/the-smash-by-two-guys-brv' },
+  { sheet: 'TheSmash - W', nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU',  url: 'https://wolt.com/en/rou/brasov/restaurant/smash-by-two-guys-67fd02d15c0da5b09cffb191' },
+  { sheet: 'TheSmash - B', nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/138455-the-smash-by-two-guys/', midday: true },
+  // competitor sites
+  { sheet: 'Buffaloeat',   nameCol: 'A', priceCol: 'B' },                                   // IMPORTXML
+  { sheet: 'Egg&Smash',    nameCol: 'A', priceCol: 'B' },                                   // IMPORTXML
+  { sheet: 'Vivo',         nameCol: 'C', priceCol: 'D', idCol: 'B', catCol: 'A', fn: 'FB_MENU', url: '708b7ab6-4386-4db4-a15e-2b22d785b925' },
+  { sheet: 'Marcos',       nameCol: 'A', priceCol: 'B', catCol: 'C', fn: 'JSONLD_MENU', url: 'https://marcosburgers.ro/meniu' },
+  // competitors – Glovo
+  { sheet: 'Kronburger - G',                  nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/kronburger-brv' },
+  { sheet: 'Kronburger Smoker and Grill - G', nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/kronburger-smoker-and-grill-brv' },
+  { sheet: 'Egg&Smash - G',                   nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/egg-smash-house-brv' },
+  { sheet: 'Vivo - G',                        nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/vivo-brv' },
+  { sheet: 'Smash by Vivo - G',               nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/smash-by-vivo-brv' },
+  { sheet: 'Macros - G',                      nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/marcos-brv' },
+  { sheet: 'Dafud - G',                       nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/d-fud-dudes-food-truck-brv-1' },
+  { sheet: 'Old Jack - G',                    nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/old-jack-burger-house-br' },
+  { sheet: 'Justinn Burger Store - G',        nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/justinn-burgers-brv' },
+  // competitors – Wolt
+  { sheet: 'Buffaloeat - W', nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/buffalo-eat-bartolomeu-6a1803da2131a0a22c74ade3' },
+  { sheet: 'Kronburger - W', nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/kronburger-smoker-grill-68f795b430c473d5f5db545f' },
+  { sheet: 'Egg&Smash - W',  nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/egg-smash-house-6a2912efdcc201a2ab34633d' },
+  { sheet: 'Dafud - W',      nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/dafud-67dac78a5416f96b8fd407b1' },
+  { sheet: 'Old Jack - W',   nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/old-jack-burger-house-67dac60c5416f96b8fd406c0' },
+  { sheet: 'Ramore - W',     nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/ramore-fresh-food-braov-6a61e5749d5d06a0265534bb' },
+  // competitors – Bolt
+  { sheet: 'Egg&Smash - B',       nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/832880-egg-smash-house/', midday: true },
+  { sheet: 'Macros - B',          nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/196690-marcos-burger/', midday: true },
+  { sheet: 'Dafud - B',           nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/203900-dafud/', midday: true },
+  { sheet: 'Old Jack - B',        nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/1132692-old-jack-burger-house/', midday: true },
+  { sheet: 'Romanian Burger - B', nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/189882-romanian-burger/', midday: true },
+];
+
+const OWN_CHANNELS = ['Mypassage', 'TwoGuys - G', 'TwoGuys - W', 'TwoGuys - B', 'TheSmash - G', 'TheSmash - W', 'TheSmash - B'];
+
+const ALERT_EMAIL = 'test123@gmail.com' ;
+const REPORT_SHEET = 'Reports', SNAP_SHEET = '_Snapshot', LOG_SHEET = 'RunLog';
+const HISTORY_SHEET = 'History';
+
+// ===== ONE-TIME SETUP =====
+function setupReports() {
+  const ss = SpreadsheetApp.getActive();
+  const mk = (name, headers, hide) => {
+    let sh = ss.getSheetByName(name);
+    if (!sh) { sh = ss.insertSheet(name); sh.appendRow(headers); sh.setFrozenRows(1); }
+    if (hide) sh.hideSheet();
+  };
+  mk(REPORT_SHEET, ['Date','Competitor','Change','Item','Old price','New price','Diff','Diff %'], false);
+  mk(SNAP_SHEET,   ['Competitor','Item','Price'], true);
+  mk(LOG_SHEET,    ['Date','Competitor','Items found','Status'], false);
+  mk(HISTORY_SHEET, ['Date','Competitor','Item','Price','Disc %'], false);
+}
+
+const STALE_DAYS = 3;   // consecutive failed days before SOURCE_LOST is reported
+let LAST_META = null;
+
+function refreshSources() {
+  const ss = SpreadsheetApp.getActive();
+  const status = {};                       // sheet -> error text ('' = ok)
+  for (const cfg of COMPETITORS) {
+    const sh = ss.getSheetByName(cfg.sheet);
+    if (!sh) continue;
+    if (cfg.midday) { status[cfg.sheet] = ''; continue; }   // refreshed by middayRefresh()
+    if (cfg.fn && cfg.url) {
+      let data;
+      try { data = this[cfg.fn](cfg.url); } catch (e) { data = 'ERR ' + e.message; }
+      if (Array.isArray(data) && data.length > 1) {
+        sh.getRange(1, 1, sh.getMaxRows(), data[0].length).clearContent();
+        sh.getRange(1, 1, data.length, data[0].length).setValues(data);
+        status[cfg.sheet] = '';
+      } else {
+        status[cfg.sheet] = String(data);   // e.g. HTTP 404, NO ITEMS
+      }
+    } else {
+      const rng = sh.getRange(1, 1, 3, 10);
+      rng.getFormulas().forEach((row, r) => row.forEach((formula, c) => {
+        if (/IMPORT(XML|DATA|HTML)/i.test(formula)) {
+          rng.getCell(r + 1, c + 1).setFormula('');
+          SpreadsheetApp.flush();
+          rng.getCell(r + 1, c + 1).setFormula(formula);
+        }
+      }));
+      status[cfg.sheet] = '';
+    }
+  }
+  
+  SpreadsheetApp.flush();
+  const importTabs = COMPETITORS.filter(c => !c.fn);
+  for (let i = 0; i < 18; i++) {              // up to 18 × 10s = 3 min
+    Utilities.sleep(10000);
+    SpreadsheetApp.flush();
+    const pending = importTabs.filter(c => {
+      const sh = ss.getSheetByName(c.sheet); if (!sh) return false;
+      const vals = sh.getRange(`${c.priceCol}2:${c.priceCol}${Math.max(sh.getLastRow(), 2)}`).getValues().flat();
+      return !vals.some(v => typeof v === 'number' && v > 0);
+    });
+    if (!pending.length) break;
+  }
+  return status;
+}
+const RENAME_THRESHOLD = 0.8;
+
+
+
+
+
+function dailyCheck() {
+  const MISSING_RUNS = 2
+  const ss = SpreadsheetApp.getActive();
+  SpreadsheetApp.flush();
+  const fetchStatus = refreshSources();
+  const today = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+  const rep = ss.getSheetByName(REPORT_SHEET), snap = ss.getSheetByName(SNAP_SHEET), log = ss.getSheetByName(LOG_SHEET);
+
+  // snapshot: Competitor | Key | Item | Price   (legacy rows: Competitor | Item | Price | '')
+  const snapRows = snap.getLastRow() > 1 ? snap.getRange(2, 1, snap.getLastRow() - 1, 7).getValues() : [];
+  const old = {};
+  snapRows.forEach(([c, key, name, price, disc, first, miss]) => {
+    (old[c] = old[c] || {})[String(key)] = { key: String(key), name: String(name), price, disc: Number(disc) || 0,
+      first: first ? String(first) : today, miss: Number(miss) || 0 };
+  });
+
+  const changes = [], logRows = [], newSnap = [];
+
+  for (const cfg of COMPETITORS) {
+    const sh = ss.getSheetByName(cfg.sheet);
+    if (!sh) { logRows.push([today, cfg.sheet, 0, 'SHEET NOT FOUND']); continue; }
+    const last = sh.getLastRow();
+    if (last < 2) { Logger.log(`❌ ${cfg.sheet}: tab is empty`); continue; }
+    const col = c => last > 1 ? sh.getRange(`${c}2:${c}${last}`).getValues().flat() : [];
+    const names = col(cfg.nameCol), prices = col(cfg.priceCol), ids = cfg.idCol ? col(cfg.idCol) : [];
+
+    const origs = cfg.origCol ? col(cfg.origCol) : [];
+    const cur = {};
+    const prev = old[cfg.sheet];
+    names.forEach((n, k) => {
+      const name = String(n || '').replace(/[\u00a0\s]+/g, ' ').trim(), shown = Number(prices[k]);
+      if (!name || isNaN(shown) || shown <= 0) return;
+      const o = Number(origs[k]);
+      const list = (o > shown) ? o : shown;                       // real price
+      const disc = list > shown ? Math.round((1 - shown / list) * 100) : 0;
+      const key = cfg.idCol && ids[k] !== '' && ids[k] != null ? String(ids[k]) : name;
+      cur[key] = { key, name, price: list, shown, disc, first: (prev && prev[key] && prev[key].first) || today, miss: 0 };
+    });
+    const count = Object.keys(cur).length;
+    const errCount = prices.filter(p => typeof p === 'string' && p.startsWith('#')).length;
+    const fetchErr = fetchStatus[cfg.sheet];
+    const failed = fetchErr || errCount > 0 || count === 0 || (prev && count < Object.keys(prev).length * 0.5);
+
+    if (failed) {
+      logRows.push([today, cfg.sheet, count, 'FETCH FAILED' + (fetchErr ? ` (${fetchErr})` : errCount ? ` (${errCount} error cells)` : '')]);
+      Object.values(prev || {}).forEach(r => newSnap.push([cfg.sheet, r.key, r.name, r.price, r.disc, r.first, r.miss]));
+      continue;
+    }
+
+    if (!prev) {
+      logRows.push([today, cfg.sheet, count, 'INITIAL BASELINE']);
+    } else {
+      const added = [], removed = [];
+      const pushDisc = (name, r, o) => {
+        if (r.disc && r.disc !== o.disc) changes.push([today, cfg.sheet, 'DISCOUNT', `${name} (-${r.disc}%)`, r.price, r.shown, r.shown - r.price, -r.disc / 100]);
+        else if (!r.disc && o.disc) changes.push([today, cfg.sheet, 'DISCOUNT_ENDED', name, '', r.price, '', '']);
+      };
+      for (const r of Object.values(cur)) {
+        const o = prev[r.key];
+        if (!o) { added.push(r); continue; }
+        const d = r.price - o.price;
+        if (o.name !== r.name) changes.push([today, cfg.sheet, 'RENAMED', `${o.name} → ${r.name}`, o.price, r.price, d !== 0 ? d : '', d !== 0 ? d / o.price : '']);
+        else if (d !== 0) changes.push([today, cfg.sheet, 'PRICE_CHANGED', r.name, o.price, r.price, d, d / o.price]);
+        pushDisc(r.name, r, o);
+      }
+      for (const o of Object.values(prev)) {
+        if (cur[o.key]) continue;
+        if (o.miss + 1 < MISSING_RUNS) { newSnap.push([cfg.sheet, o.key, o.name, o.price, o.disc, o.first, o.miss + 1]); continue; } // pending, keep quietly
+        removed.push(o);
+      }
+      
+      const usedAdd = new Set();
+      for (const o of removed) {
+        let best = null, bestScore = 0;
+        for (const a of added) {
+          if (usedAdd.has(a.key)) continue;
+          const s = similarity(normName(o.name), normName(a.name));
+          if (s > bestScore) { bestScore = s; best = a; }
+        }
+        if (best && bestScore >= RENAME_THRESHOLD) {
+          usedAdd.add(best.key);
+          const d = best.price - o.price;
+          changes.push([today, cfg.sheet, 'RENAMED', `${o.name} → ${best.name}`, o.price, best.price, d !== 0 ? d : '', d !== 0 ? d / o.price : '']);
+          pushDisc(best.name, best, o);
+        } else {
+          const days = Math.round((new Date(today) - new Date(o.first)) / 864e5);
+          changes.push([today, cfg.sheet, 'REMOVED', `${o.name} (${days} zile)`, o.price, '', '', '']);        }
+      }
+      for (const a of added) if (!usedAdd.has(a.key)) {
+        changes.push([today, cfg.sheet, 'ADDED', a.name + (a.disc ? ` (-${a.disc}%)` : ''), '', a.shown, '', '']);
+      }
+      logRows.push([today, cfg.sheet, count, 'OK']);
+    }
+    Object.values(cur).forEach(r => newSnap.push([cfg.sheet, r.key, r.name, r.price, r.disc, r.first, r.miss]));
+  }
+
+  // stale detection
+  const hist = log.getLastRow() > 1 ? log.getRange(2, 1, log.getLastRow() - 1, 4).getValues() : [];
+  for (const cfg of COMPETITORS) {
+    const todayRow = logRows.find(r => r[1] === cfg.sheet);
+    if (!todayRow || !String(todayRow[3]).startsWith('FETCH')) continue;
+    const past = hist.filter(r => r[1] === cfg.sheet).map(r => String(r[3])).reverse();
+    let streak = 1;
+    for (const s of past) { if (s.startsWith('FETCH')) streak++; else break; }
+    if (streak === STALE_DAYS)
+      changes.push([today, cfg.sheet, 'SOURCE_LOST', `No data for ${STALE_DAYS} days – closed on this platform?`, '', '', '', '']);
+  }
+
+  if (changes.length) rep.getRange(rep.getLastRow() + 1, 1, changes.length, 8).setValues(changes);
+  log.getRange(log.getLastRow() + 1, 1, logRows.length, 4).setValues(logRows);
+  snap.getRange(1, 1, 1, 7).setValues([['Competitor', 'Key', 'Item', 'Price', 'Disc %', 'First seen', 'Missing']]);
+  if (snap.getLastRow() > 1) snap.getRange(2, 1, snap.getLastRow() - 1, 7).clearContent();
+  if (newSnap.length) snap.getRange(2, 1, newSnap.length, 7).setValues(newSnap);
+    const hs = ss.getSheetByName(HISTORY_SHEET);
+  if (hs && newSnap.length) {
+    const histRows = newSnap.map(([c, key, name, price, disc]) => [today, c, name, price, disc || '']);
+    hs.getRange(hs.getLastRow() + 1, 1, histRows.length, 5).setValues(histRows);
+  }
+
+  const anyFailed = logRows.some(r => String(r[3]).startsWith('FETCH'));
+  if (changes.length || anyFailed) sendAlert(today, changes, logRows);
+}
+
+
+
+function buildMatrix() {
+  const ss = SpreadsheetApp.getActive();
+  const cm = ss.getSheetByName(COMPMAP_SHEET);
+  const comps = cm.getRange(1, 2, 1, cm.getLastColumn() - 1).getValues()[0].map(String).filter(Boolean);
+  const mx = ss.getSheetByName(MATRIX_SHEET) || ss.insertSheet(MATRIX_SHEET);
+  mx.clearContents();
+  const n = cm.getLastRow() - 1;                         // number of products
+  const colL = i => { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = (i - m - 1) / 26; } return s; };
+
+  const header = ['Produs', 'Pret', 'Min piață', 'Medie piață', 'Noi vs medie', 'Cel mai ieftin'];
+  comps.forEach(c => header.push(c, 'Pret'));
+  mx.getRange(1, 1, 1, header.length).setValues([header]).setFontWeight('bold');
+
+  const f = [];
+  f.push(['=FILTER(CompMap!A2:A; CompMap!A2:A<>"")',
+          '=ARRAYFORMULA(IF($A2:$A=""; ""; IFERROR(VLOOKUP($A2:$A; BurgerBrasov!A:B; 2; FALSE); "")))']);
+  mx.getRange(2, 1, 1, 2).setFormulas(f);
+
+  const rows = [];
+  for (let r = 2; r <= n + 1; r++) {
+    const row = [
+      `=IFERROR(MIN(FILTER(G${r}:${r}; $G$1:$1="Pret"; ISNUMBER(G${r}:${r}))); "")`,
+      `=IFERROR(AVERAGE(FILTER(G${r}:${r}; $G$1:$1="Pret"; ISNUMBER(G${r}:${r}))); "")`,
+      `=IF(AND(B${r}<>""; D${r}<>""); B${r}/D${r}-1; "")`,
+      `=IFERROR(INDEX($F$1:$1; MATCH(C${r}; G${r}:${r}; 0)); "")`,
+    ];
+    comps.forEach((c, k) => {
+      const ic = colL(6 + 2 * k), pc = colL(7 + 2 * k);
+      row.push(`=IF($A${r}=""; ""; IFERROR(VLOOKUP($A${r}; CompMap!$A:$ZZ; MATCH(${ic}$1; CompMap!$1:$1; 0); FALSE); ""))`);
+      row.push(`=IF(${ic}${r}=""; ""; IFERROR(ARRAYFORMULA(INDEX(_Snapshot!$D:$D; MATCH(1; (_Snapshot!$A:$A=${ic}$1)*(_Snapshot!$C:$C=${ic}${r}); 0))); "?"))`);
+    });
+    rows.push(row);
+  }
+  if (rows.length) mx.getRange(2, 3, rows.length, rows[0].length).setFormulas(rows);
+  mx.getRange(2, 5, n, 1).setNumberFormat('0.0%');
+  mx.setFrozenRows(1); mx.setFrozenColumns(2);
+}
+
+
+
+
+
+function testAllSources() {
+  const ss = SpreadsheetApp.getActive();
+  SpreadsheetApp.flush();
+  const seen = {};
+  for (const cfg of COMPETITORS) {
+    if (seen[cfg.sheet]) { Logger.log(`❌ ${cfg.sheet}: DUPLICATE entry in COMPETITORS`); continue; }
+    seen[cfg.sheet] = true;
+    const sh = ss.getSheetByName(cfg.sheet);
+    if (!sh) { Logger.log(`❌ ${cfg.sheet}: sheet not found (check exact name)`); continue; }
+    const last = sh.getLastRow();
+    const names  = sh.getRange(`${cfg.nameCol}2:${cfg.nameCol}${last}`).getValues().flat();
+    const prices = sh.getRange(`${cfg.priceCol}2:${cfg.priceCol}${last}`).getValues().flat();
+    let ok = 0, badPrice = [], dupes = {}, blankName = 0;
+    names.forEach((n, i) => {
+      const nm = String(n || '').trim(), p = prices[i];
+      if (!nm && (p === '' || p == null)) return;
+      if (!nm) { blankName++; return; }
+      if (typeof p !== 'number' || isNaN(p) || p <= 0) { badPrice.push(`${nm} → "${p}"`); return; }
+      dupes[nm] = (dupes[nm] || 0) + 1; ok++;
+    });
+    const dupList = Object.entries(dupes).filter(([, c]) => c > 1).map(([n, c]) => `${n} ×${c}`);
+    const flag = ok === 0 ? '❌' : (badPrice.length || dupList.length || blankName) ? '⚠️' : '✅';
+    Logger.log(`${flag} ${cfg.sheet}: ${ok} valid items` +
+      (badPrice.length ? ` | ${badPrice.length} bad prices: ${badPrice.slice(0, 3).join('; ')}` : '') +
+      (blankName ? ` | ${blankName} rows with price but no name` : '') +
+      (dupList.length ? ` | duplicate names: ${dupList.slice(0, 3).join('; ')}` : ''));
+  }
+}
+
+
+function GLOVO_MENU(storeUrl) {
+  storeUrl = String(storeUrl).trim();
+  const html = UrlFetchApp.fetch(storeUrl, {
+    muteHttpExceptions: true,
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36' }
+  }).getContentText();
+  const num = t => parseFloat(t.replace(/[^\d,]/g, '').replace(',', '.'));
+  const rows = [['Section', 'Item', 'Price', 'Original price']];
+  const re = /List_title__\w+"[^>]*>([^<]+)<\/h3>|ItemRow_titleContainer__\w+"><p[^>]*>([^<]+)<\/p>[\s\S]*?ItemRow_priceContainer__\w+">(.*?)<\/div>/g;
+  let section = '', m;
+  while ((m = re.exec(html)) !== null) {
+    if (m[1]) { section = m[1]; continue; }
+    const spans = [...m[3].matchAll(/<span[^>]*>([^<]+)<\/span>/g)].map(x => x[1]);
+    const price = num(spans[0] || ''), orig = spans[1] ? num(spans[1]) : '';
+    rows.push([section, m[2].trim(), price, orig]);
+  }
+  return rows.length > 1 ? rows : 'NO ITEMS – check URL or blocked';
+}
+
+
+function WOO_MENU(siteUrl) {
+  const base = siteUrl.replace(/\/+$/, '');
+  const hdr = { muteHttpExceptions: true, headers: { 'User-Agent': 'Mozilla/5.0' } };
+  const minor = p => Math.pow(10, p.prices.currency_minor_unit);
+  const fetchAll = q => {
+    const out = [];
+    for (let page = 1; page <= 10; page++) {
+      const res = UrlFetchApp.fetch(`${base}/wp-json/wc/store/v1/products?per_page=100&page=${page}&${q}`, hdr);
+      if (res.getResponseCode() !== 200) return page === 1 ? null : out;
+      const items = JSON.parse(res.getContentText());
+      out.push(...items);
+      if (items.length < 100) break;
+    }
+    return out;
+  };
+  const products = fetchAll('type=simple') , variations = fetchAll('type=variation');
+  if (!products) return 'HTTP error';
+  const rows = [['Item', 'Price', 'Category', 'ID', 'Original price']];
+  products.forEach(p => rows.push([p.name, Number(p.prices.price) / minor(p), p.categories.map(c => c.name).join(', '), p.id, Number(p.prices.regular_price) / minor(p)]));
+  (variations || []).forEach(v => {
+    const opt = (v.variation || '').replace(/^[^:]+:\s*/, '');       // "Extra: Cu parmezan" -> "Cu parmezan"
+    rows.push([`${v.name} – ${opt}`, Number(v.prices.price) / minor(v), (v.categories || []).map(c => c.name).join(', '), v.id, Number(v.prices.regular_price) / minor(v)]);
+  });
+  return rows;
+}
+
+const MATRIX_SHEET = 'MatchMatrix';
+
+
+
+function resetAll() {
+  const ss = SpreadsheetApp.getActive();
+  [REPORT_SHEET, LOG_SHEET, HISTORY_SHEET, SNAP_SHEET].forEach(name => {
+    const sh = ss.getSheetByName(name);
+    if (sh && sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, sh.getLastColumn()).clearContent();
+  });
+}
+
+
+function SITE_DEBUG(url) {
+  const html = UrlFetchApp.fetch(url, { muteHttpExceptions: true, headers: { 'User-Agent': 'Mozilla/5.0' } }).getContentText();
+  const h3 = [...html.matchAll(/<h3[^>]*>([\s\S]*?)<\/h3>/g)].map(x => x[1].replace(/<[^>]+>/g, '').trim()).filter(Boolean);
+  const h4 = [...html.matchAll(/<h4[^>]*>([\s\S]*?)<\/h4>/g)].map(x => x[1].replace(/<[^>]+>/g, '').trim()).filter(Boolean);
+  return [['length', html.length], ['steak?', html.indexOf('Steak Burger')], ['h3', h3.join(' | ')], ['h4', h4.join(' | ')]];
+}
+
+const MAP_SHEET = 'Map';
+const MAP_THRESHOLD = 0.6;
+
+const MAP_PRICE_BAND = [0.6, 1.8];
+
+
+
+
+function decode(t) {
+  return String(t).replace(/&#(\d+);/g, (_, n) => String.fromCharCode(n))
+    .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#039;|&apos;/g, "'").replace(/&nbsp;/g, ' ').trim();
+}
+
+
+
+const COMPMAP_SHEET = 'CompMap';
+
+
+function middayRefresh() {
+  const ss = SpreadsheetApp.getActive();
+  for (const cfg of COMPETITORS.filter(c => c.midday)) {
+    const sh = ss.getSheetByName(cfg.sheet); if (!sh) continue;
+    let data;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try { data = this[cfg.fn](cfg.url); } catch (e) { data = 'ERR ' + e.message; }
+      if (Array.isArray(data)) break;
+      Utilities.sleep(8000 * attempt);
+    }
+    Utilities.sleep(3000);
+    const oldCount = Math.max(sh.getLastRow() - 1, 0);
+    if (!Array.isArray(data) || data.length < 2 || (oldCount && data.length - 1 < oldCount * 0.5)) {
+      Logger.log(`${cfg.sheet}: kept previous data (${String(data).slice(0, 60)}${Array.isArray(data) ? ', ' + (data.length - 1) + ' items' : ''})`);
+      continue;                                   // closed / partial menu → keep yesterday's full list
+    }
+    sh.getRange(1, 1, sh.getMaxRows(), data[0].length).clearContent();
+    sh.getRange(1, 1, data.length, data[0].length).setValues(data);
+        if (LAST_META) {
+      const ms = ss.getSheetByName('Meta') || ss.insertSheet('Meta');
+      if (ms.getLastRow() === 0) ms.appendRow(['Date', 'Competitor', 'Rating', 'Reviews', 'Delivery fee', 'Delivery min']);
+      ms.appendRow([Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd'), cfg.sheet,
+        LAST_META.rating, LAST_META.reviews, LAST_META.fee, LAST_META.minutes]);
+      LAST_META = null;
+    }
+  }
+}

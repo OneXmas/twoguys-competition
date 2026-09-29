@@ -1,0 +1,191 @@
+// ===== EMAIL CONFIG — edit here =====
+const EMAIL_CFG = {
+  subject: (n, date) => `🍔 Competiție: ${n} ${plural(n)} (${date})`,
+  title: 'Raport competiție',
+  footer: 'Raport automat generat zilnic numai dacă există modificări față de ziua precedentă',
+  buttonText: 'Deschide fisier RAPORT',
+  labels: { ADDED: 'ADĂUGAT', REMOVED: 'DELISTAT', PRICE_CHANGED: 'Preț NOU', SOURCE_LOST: 'Sursă pierdută' },
+  colors: {
+    accent:   '#ff6b00',   // top/bottom bar + header
+    ADDED:    '#16a34a',   // green
+    REMOVED:  '#6b7280',   // grey
+    up:       '#dc2626',   // price went up — red
+    down:     '#2563eb',   // price went down — blue
+    headerBg: '#111827',
+    rowAlt:   '#f9fafb',
+    SOURCE_LOST: '#7c3aed',   // purple
+  },
+};
+
+const plural = n => n === 1 ? 'modificare' : 'modificări';
+
+
+function sendAlert(today, changes, logRows) {
+  const C = EMAIL_CFG, col = C.colors;
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const fmt = v => v === '' ? '' : Number(v).toFixed(2);
+
+  const byComp = {};
+  changes.forEach(r => (byComp[r[1]] = byComp[r[1]] || []).push(r));
+
+  let body = '';
+  for (const [comp, rows] of Object.entries(byComp)) {
+    body += `
+    <div style="font-size:15px;font-weight:700;color:#111827;margin:18px 0 6px;">${esc(comp)}
+      <span style="font-weight:400;color:#6b7280;font-size:13px;">— ${rows.length} ${plural(rows.length)}</span></div>
+    <table width="100%" cellpadding="6" cellspacing="0" border="0" style="border:1px solid #e5e7eb;border-radius:8px;font-size:13px;">
+      <tr style="background:${col.headerBg};color:#fff;">
+        <th align="center">Modificare</th><th align="center">Articol</th><th align="center">Vechi</th><th align="center">Nou</th><th align="center">Dif</th>
+      </tr>`;
+    rows.forEach((r, i) => {
+      const type = r[2], d = r[6];
+      const badgeColor = type === 'PRICE_CHANGED' ? (d > 0 ? col.up : col.down) : col[type];
+      const diffTxt = d === '' ? '' : `${d > 0 ? '▲' : '▼'} ${fmt(Math.abs(d))} (${(Math.abs(r[7]) * 100).toFixed(1)}%)`;
+      body += `
+      <tr style="background:${i % 2 ? col.rowAlt : '#fff'};">
+        <td><span style="display:inline-block;padding:2px 8px;border-radius:10px;background:${badgeColor};color:#fff;font-size:11px;font-weight:700;">${C.labels[type]}</span></td>
+        <td>${esc(r[3])}</td>
+        <td align="right">${fmt(r[4])}</td>
+        <td align="right"><b>${fmt(r[5])}</b></td>
+        <td align="right" style="color:${badgeColor};font-weight:700;">${diffTxt}</td>
+      </tr>`;
+    });
+    body += '</table>';
+  }
+
+  const failed = logRows.filter(r => String(r[3]).startsWith('FETCH'));
+  const warn = failed.length
+    ? `<div style="margin-top:16px;padding:10px;background:#fef3c7;border-left:4px solid #f59e0b;font-size:13px;">
+        ⚠️ Not checked today (fetch failed): <b>${esc(failed.map(r => r[1]).join(', '))}</b></div>` : '';
+
+
+  const html = `
+  <div style="background:#f3f4f6;padding:20px 8px;font-family:Arial,sans-serif;">
+  <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+    <div style="height:5px;background:${col.accent};"></div>
+    <div style="padding:20px;border-bottom:1px solid #e5e7eb;text-align:center;">
+      <div style="font-size:18px;font-weight:800;color:#111827;">${C.title}</div>
+      ${body}
+      ${warn}
+      <div style="font-size:11px;color:#9ca3af;margin-top:16px;text-align:center;">${C.footer}</div>
+    </div>
+    <div style="height:5px;background:${col.accent};"></div>
+  </div></div>`;
+
+  MailApp.sendEmail({ to: ALERT_EMAIL,     subject: changes.length ? C.subject(changes.length, today) : `⚠️ Sursă fără date (${today})`, htmlBody: html });
+}
+
+
+function weeklyDigest() {
+  const ss = SpreadsheetApp.getActive(), tz = ss.getSpreadsheetTimeZone();
+  const today = new Date(), since = new Date(today.getTime() - 7 * 864e5);
+  const fmt = d => Utilities.formatDate(d, tz, 'yyyy-MM-dd');
+  const sinceStr = fmt(since), todayStr = fmt(today);
+  const C = EMAIL_CFG, col = C.colors;
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const table = (headers, rows, aligns = []) => rows.length ? `
+    <table width="100%" cellpadding="6" cellspacing="0" style="border:1px solid #e5e7eb;font-size:13px;margin-bottom:14px;">
+      <tr style="background:${col.headerBg};color:#fff;">${headers.map((h, i) => `<th align="${aligns[i] || 'left'}">${h}</th>`).join('')}</tr>
+      ${rows.map((r, i) => `<tr style="background:${i % 2 ? col.rowAlt : '#fff'};">${r.map((c, j) => `<td align="${aligns[j] || 'left'}">${c}</td>`).join('')}</tr>`).join('')}
+    </table>` : '<p style="color:#6b7280;font-size:13px;">—</p>';
+  const section = (title, html) => `<div style="font-size:15px;font-weight:700;margin:20px 0 8px;">${title}</div>${html}`;
+
+  // 1. changes last 7 days, per competitor and type
+  const rep = ss.getSheetByName(REPORT_SHEET);
+  const rows = rep.getLastRow() > 1 ? rep.getRange(2, 1, rep.getLastRow() - 1, 8).getValues() : [];
+  const week = rows.filter(r => { const d = r[0] instanceof Date ? fmt(r[0]) : String(r[0]); return d >= sinceStr; });
+  const types = ['PRICE_CHANGED', 'DISCOUNT', 'ADDED', 'REMOVED', 'RENAMED'];
+  const perComp = {};
+  week.forEach(r => { const c = perComp[r[1]] = perComp[r[1]] || {}; c[r[2]] = (c[r[2]] || 0) + 1; });
+  const summaryRows = Object.entries(perComp).sort((a, b) => b[1].length - a[1].length)
+    .map(([c, t]) => [esc(c), ...types.map(k => t[k] || '')]);
+
+  // 2. biggest price moves (list price only)
+  const movers = week.filter(r => r[2] === 'PRICE_CHANGED' && r[7] !== '')
+    .sort((a, b) => Math.abs(b[7]) - Math.abs(a[7])).slice(0, 8)
+    .map(r => [esc(r[1]), esc(r[3]), Number(r[4]).toFixed(2), Number(r[5]).toFixed(2),
+      `<span style="color:${r[6] > 0 ? col.up : col.down};font-weight:700;">${r[6] > 0 ? '▲' : '▼'} ${(Math.abs(r[7]) * 100).toFixed(1)}%</span>`]);
+
+  // 3. active discounts right now (from snapshot)
+  const snap = ss.getSheetByName(SNAP_SHEET);
+  const snapRows = snap.getLastRow() > 1 ? snap.getRange(2, 1, snap.getLastRow() - 1, 5).getValues() : [];
+  const promos = snapRows.filter(r => Number(r[4]) > 0).sort((a, b) => b[4] - a[4]).slice(0, 15)
+    .map(r => [esc(r[0]), esc(r[2]), Number(r[3]).toFixed(2), `-${r[4]}%`]);
+
+  // 4. our position vs market (MatchMatrix)
+  let position = '';
+  const mx = ss.getSheetByName(MATRIX_SHEET);
+  if (mx && mx.getLastRow() > 1) {
+    const hdr = mx.getRange(1, 1, 1, mx.getLastColumn()).getValues()[0];
+    const iItem = 0, iAD = hdr.indexOf('Noi vs medie'), iAE = hdr.indexOf('Cel mai ieftin'), iAC = hdr.indexOf('Medie piață');
+    const data = mx.getRange(2, 1, mx.getLastRow() - 1, mx.getLastColumn()).getValues()
+      .filter(r => r[iItem] && typeof r[iAD] === 'number');
+    if (data.length) {
+      const avg = data.reduce((s, r) => s + r[iAD], 0) / data.length;
+      const fmtPct = v => `<span style="color:${v > 0 ? col.up : col.down};font-weight:700;">${v > 0 ? '+' : ''}${(v * 100).toFixed(1)}%</span>`;
+      const sorted = [...data].sort((a, b) => b[iAD] - a[iAD]);
+      const posRows = [...sorted.slice(0, 5), ...sorted.slice(-5)].filter((r, i, a) => a.indexOf(r) === i)
+        .map(r => [esc(r[iItem]), Number(r[1]).toFixed(2), Number(r[iAC]).toFixed(2), fmtPct(r[iAD]), esc(r[iAE] || '')]);
+      position = `<p style="font-size:14px;">Poziție medie față de piață: ${fmtPct(avg)} pe ${data.length} produse</p>` +
+        table(['Produs', 'Preț nostru', 'Medie piață', 'Diferență', 'Cel mai ieftin'], posRows, ['left', 'right', 'right', 'right', 'left']);
+    }
+  }
+
+  // 5. data health
+  const log = ss.getSheetByName(LOG_SHEET);
+  const logRows = log.getLastRow() > 1 ? log.getRange(2, 1, log.getLastRow() - 1, 4).getValues() : [];
+  const failed = {};
+  logRows.filter(r => (r[0] instanceof Date ? fmt(r[0]) : String(r[0])) >= sinceStr && String(r[3]).startsWith('FETCH'))
+    .forEach(r => failed[r[1]] = (failed[r[1]] || 0) + 1);
+  let health = Object.keys(failed).length
+    ? `<div style="padding:10px;background:#fef3c7;border-left:4px solid #f59e0b;font-size:13px;">⚠️ Zile fără date: ${Object.entries(failed).map(([c, n]) => `${esc(c)} (${n})`).join(', ')}</div>`
+    : `<p style="font-size:13px;color:${col.ADDED};">✅ Toate sursele au livrat date în fiecare zi.</p>`;
+  const cmS = ss.getSheetByName(COMPMAP_SHEET);
+  if (cmS && cmS.getLastRow() > 1) {
+    const v = cmS.getRange(2, 2, cmS.getLastRow() - 1, cmS.getLastColumn() - 1).getValues().flat().map(String);
+    const blank = v.filter(x => !x).length, unrev = v.filter(x => /^[~≈]/.test(x)).length;
+    health += `<p style="font-size:13px;">CompMap: ${blank} celule nepotrivite, ${unrev} sugestii nerevizuite (~/≈)</p>`;
+  }
+
+  // 6. own channels vs site
+  let channels = '';
+  const ch = ss.getSheetByName('Channels');
+  if (ch && ch.getLastRow() > 1) {
+    const hdr = ch.getRange(1, 1, 1, ch.getLastColumn()).getValues()[0].map(String);
+    const data = ch.getRange(2, 1, ch.getLastRow() - 1, ch.getLastColumn()).getValues().filter(r => r[0]);
+    const chRows = [];
+    hdr.forEach((h, i) => {
+      if (h !== 'Δ%') return;
+      const name = hdr[i - 2], diffs = data.map(r => r[i]).filter(v => typeof v === 'number');
+      const missing = data.filter(r => !r[i - 2]).length;
+      const avg = diffs.length ? diffs.reduce((s, v) => s + v, 0) / diffs.length : null;
+      const worst = data.filter(r => typeof r[i] === 'number').sort((a, b) => b[i] - a[i])[0];
+      chRows.push([esc(name), avg === null ? '—' : `<b>${avg > 0 ? '+' : ''}${(avg * 100).toFixed(1)}%</b>`, diffs.length, missing,
+        worst ? `${esc(worst[0])} (${worst[i] > 0 ? '+' : ''}${(worst[i] * 100).toFixed(0)}%)` : '—']);
+    });
+    channels = table(['Canal', 'Markup mediu', 'Produse comparate', 'Lipsă în Map', 'Cel mai mare markup'], chRows, ['left','right','right','right','left']);
+  }
+
+  const html = `
+  <div style="background:#f3f4f6;padding:20px 8px;font-family:Arial,sans-serif;">
+  <div style="max-width:680px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+    <div style="height:5px;background:${col.accent};"></div>
+    <div style="padding:20px;border-bottom:1px solid #e5e7eb;text-align:center;">
+      <div style="font-size:18px;font-weight:800;">Raport săptămânal concurență</div>
+      <div style="font-size:13px;color:#6b7280;">${sinceStr} → ${todayStr} · ${week.length} ${plural(week.length)}</div>
+    </div>
+    <div style="padding:4px 20px 20px;">
+      ${section('Poziția noastră', position || '<p style="color:#6b7280;font-size:13px;">MatchMatrix gol</p>')}
+      ${section('Canale proprii vs Restaurant Passage', channels || '<p style="color:#6b7280;font-size:13px;">Foaia Channels lipsește</p>')}
+      ${section('Modificări pe concurent', table(['Concurent', 'Preț', 'Discount', 'Nou', 'Eliminat', 'Redenumit'], summaryRows, ['left','right','right','right','right','right']))}
+      ${section('Cele mai mari mișcări de preț', table(['Concurent', 'Produs', 'Vechi', 'Nou', 'Δ'], movers, ['left','left','right','right','right']))}
+      ${section('Promoții active acum', table(['Concurent', 'Produs', 'Preț listă', 'Discount'], promos, ['left','left','right','right']))}
+      ${section('Sănătatea datelor', health)}
+    </div>
+    <div style="height:5px;background:${col.accent};"></div>
+  </div></div>`;
+
+  MailApp.sendEmail({ to: ALERT_EMAIL, subject: `📊 Raport săptămânal concurență (${sinceStr} → ${todayStr})`, htmlBody: html });
+}
+
+

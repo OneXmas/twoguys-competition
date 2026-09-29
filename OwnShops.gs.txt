@@ -1,0 +1,112 @@
+const OWN_REPORTS = [
+  { name: 'Report A – TwoGuys Delivery', map: 'TwoGuys Delivery', tabs: ['TwoGuys - G', 'TwoGuys - W', 'TwoGuys - B'] },
+  { name: 'Report B – TwoGuys Home',      map: 'TwoGuys Home', tabs: ['Burgerbrasov', 'Mypassage'] },
+  { name: 'Report C – Smash Delivery',   map: 'Smash Delivery', tabs: ['TheSmash - G', 'TheSmash - W', 'TheSmash - B'] },
+];
+const PRICE_TOLERANCE = 0.01;
+const SGR = 0.5;                                   // deposit not shown in Bolt prices
+const SGR_TABS = ['TwoGuys - B', 'TheSmash - B'];  // tabs where drinks appear SGR-less
+
+// quantities in a name: "330ml", "250 ml", "450g", "2 buc" -> ["330ml", ...]
+function qtyOf(s) {
+  return (String(s).toLowerCase().match(/\d+(?:[.,]\d+)?\s*(?:ml|l|g|gr|kg|buc|cl)\b/g) || []).map(q => q.replace(/\s+/g, '').replace('gr', 'g'));
+}
+
+// Creates the Ref tabs; column A/B stay yours. Platform columns get fuzzy suggestions for blank cells only.
+function buildRefSheets() {
+  const ss = SpreadsheetApp.getActive();
+  for (const r of OWN_REPORTS) {
+    let sh = ss.getSheetByName(r.map);
+    if (!sh) { sh = ss.insertSheet(r.map); sh.appendRow(['Produs', 'Preț', ...r.tabs]); sh.setFrozenRows(1); sh.setFrozenColumns(2); }
+    if (sh.getLastRow() < 2) continue;
+    const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+    const rng = sh.getRange(2, 1, sh.getLastRow() - 1, headers.length), rows = rng.getValues();
+    
+    headers.forEach((tab, c) => {
+      if (!COMPETITORS.some(x => x.sheet === tab)) return;
+      const prices = priceOf(ss, tab), pool = Object.keys(prices);
+      const used = new Set(rows.map(x => String(x[c])).filter(Boolean));
+      for (const row of rows) {
+        if (!row[0] || row[c]) continue;
+        const base = Number(row[1]), a = mapNorm(row[0]);
+        let best = '', bestScore = 0;
+        for (const cand of pool) {
+          if (used.has(cand)) continue;
+          const p = prices[cand];
+          if (base && p && (p / base < MAP_PRICE_BAND[0] || p / base > MAP_PRICE_BAND[1])) continue;
+          const qa = qtyOf(row[0]), qb = qtyOf(cand);
+          if (qa.length && qb.length && qa.join() !== qb.join()) continue;   // 250ml ≠ 330ml
+          const s = similarity(a, mapNorm(cand));
+          if (s > bestScore) { bestScore = s; best = cand; }
+        }
+        if (bestScore >= MAP_THRESHOLD) { row[c] = best; used.add(best); }
+      }
+    });
+    rng.setValues(rows);
+  }
+}
+
+function ownShopsReport() {
+  const ss = SpreadsheetApp.getActive(), today = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+  const listPrices = tab => {                       // name -> list price (discount ignored)
+    const cfg = COMPETITORS.find(c => c.sheet === tab), sh = ss.getSheetByName(tab), m = {};
+    if (!cfg || !sh || sh.getLastRow() < 2) return m;
+    const last = sh.getLastRow(), col = c => c ? sh.getRange(`${c}2:${c}${last}`).getValues().flat() : [];
+    const n = col(cfg.nameCol), p = col(cfg.priceCol), o = col(cfg.origCol), st = col(cfg.stockCol);
+    n.forEach((x, i) => { const s = Number(p[i]), org = Number(o[i]); if (x && s > 0) m[String(x).trim()] = { list: org > s ? org : s, disc: org > s ? Math.round((1 - s / org) * 100) : 0, oos: /epuizat/i.test(st[i] || '') }; });
+    return m;
+  };
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const col = EMAIL_CFG.colors;
+  let html = '', total = 0;
+
+  for (const r of OWN_REPORTS) {
+    const map = ss.getSheetByName(r.map); if (!map || map.getLastRow() < 2) continue;
+    const headers = map.getRange(1, 1, 1, map.getLastColumn()).getValues()[0].map(String).filter(Boolean);
+    const tabs = headers.filter(h => COMPETITORS.some(c => c.sheet === h));
+    const tabIdx = tabs.map(t => headers.indexOf(t));
+    const rows = map.getRange(2, 1, map.getLastRow() - 1, headers.length).getValues();
+    const prices = tabs.map(listPrices);
+    const mappedPerTab = tabs.map(() => new Set());
+    const issues = [];
+
+    for (const row of rows) {
+      const name = String(row[0]).trim(), refP = Number(row[1]);
+      if (!name || !(refP > 0)) continue;
+      const cells = []; let bad = false;
+      tabs.forEach((tab, i) => {
+        const mapped = String(row[tabIdx[i]] || '').trim();
+        if (mapped === '-') { cells.push('<td align="center" style="color:#9ca3af;">n/a</td>'); return; }
+        if (mapped) mappedPerTab[i].add(mapped);
+        const p = mapped ? prices[i][mapped] : undefined;
+        if (p == null) { cells.push(`<td align="center" style="color:${col.up};font-weight:700;">X</td>`); bad = true; return; }
+        const tag = (p.disc ? ` <span style="color:${col.ADDED};font-size:11px;">−${p.disc}%</span>` : '')
+                  + (p.oos ? ` <span style="color:${col.REMOVED};font-size:11px;">epuizat</span>` : '');
+        let d = p.list - refP;
+        const sgr = SGR_TABS.includes(tab) && Math.abs(d + SGR) <= PRICE_TOLERANCE;
+        if (sgr) d = 0;
+        if (Math.abs(d) > PRICE_TOLERANCE) { cells.push(`<td align="right" style="color:${d > 0 ? col.up : col.down};font-weight:700;">${p.list.toFixed(2)} (${d > 0 ? '+' : ''}${d.toFixed(2)})${tag}</td>`); bad = true; }
+        else cells.push(`<td align="center" style="color:#9ca3af;">✓${sgr ? ' <span style="font-size:11px;">SGR</span>' : ''}${tag}</td>`);
+      });
+      if (bad) issues.push(`<tr><td>${esc(name)}</td><td align="right">${refP.toFixed(2)}</td>${cells.join('')}</tr>`);
+    }
+
+    // items on a platform that no master row points at → candidates to delete
+    const extras = [];
+    tabs.forEach((tab, i) => Object.keys(prices[i]).filter(n => !mappedPerTab[i].has(n))
+      .forEach(n => extras.push(`<tr><td>${esc(tab)}</td><td>${esc(n)}</td><td align="right">${prices[i][n].list.toFixed(2)}</td></tr>`)));
+
+    total += issues.length + extras.length;
+    html += `<div style="font-size:15px;font-weight:700;margin:18px 0 6px;">${esc(r.name)} <span style="font-weight:400;color:#6b7280;font-size:13px;">— ${issues.length} probleme, ${extras.length} produse în plus</span></div>`;
+    html += issues.length ? `<table width="100%" cellpadding="6" cellspacing="0" style="border:1px solid #e5e7eb;font-size:13px;">
+      <tr style="background:${col.headerBg};color:#fff;"><th align="left">Produs</th><th align="right">Preț ref.</th>${tabs.map(h => `<th>${esc(h)}</th>`).join('')}</tr>${issues.join('')}</table>` : '';
+    html += extras.length ? `<div style="font-size:13px;font-weight:700;margin:10px 0 4px;color:#6b7280;">Pe platformă dar nu în lista master:</div>
+      <table width="100%" cellpadding="6" cellspacing="0" style="border:1px solid #e5e7eb;font-size:13px;"><tr style="background:${col.headerBg};color:#fff;"><th align="left">Platformă</th><th align="left">Produs</th><th align="right">Preț</th></tr>${extras.join('')}</table>` : '';
+    if (!issues.length && !extras.length) html += `<p style="font-size:13px;color:${col.ADDED};">✓ Totul în ordine</p>`;
+  }
+  if (!total) return;
+  const body = `<div style="background:#f3f4f6;padding:20px 8px;font-family:Arial,sans-serif;"><div style="max-width:720px;margin:0 auto;background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;">
+    <div style="height:5px;background:${col.accent};"></div><div style="padding:20px;text-align:center;border-bottom:1px solid #e5e7eb;"><div style="font-size:18px;font-weight:800;">Verificare magazine proprii</div><div style="font-size:13px;color:#6b7280;">${today} · X = lipsă · preț afișat = diferit de lista master</div></div>
+    <div style="padding:4px 20px 20px;">${html}</div><div style="height:5px;background:${col.accent};"></div></div></div>`;
+  MailApp.sendEmail({ to: ALERT_EMAIL, subject: `🏪 Magazine proprii: ${total} probleme (${today})`, htmlBody: body });
+}

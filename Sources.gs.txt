@@ -1,0 +1,135 @@
+function JSONLD_MENU(pageUrl) {
+  const html = UrlFetchApp.fetch(pageUrl, { muteHttpExceptions: true, headers: { 'User-Agent': 'Mozilla/5.0' } }).getContentText();
+  const rows = [['Item', 'Price', 'Section']];
+  const re = /<script type="application\/ld\+json">\s*([\s\S]*?)\s*<\/script>/g;
+  let m;
+  while ((m = re.exec(html)) !== null) {
+    let d; try { d = JSON.parse(m[1]); } catch (e) { continue; }
+    if (d['@type'] !== 'Menu') continue;
+    for (const sec of d.hasMenuSection || []) {
+      for (const it of sec.hasMenuItem || []) {
+        const offers = Array.isArray(it.offers) ? it.offers : it.offers ? [it.offers] : [];
+        if (offers.length > 1) offers.forEach(o => rows.push([`${it.name} – ${o.name}`, Number(o.price), sec.name]));
+        else rows.push([it.name, Number(offers[0] ? offers[0].price : it.price), sec.name]);
+      }
+    }
+  }
+  return rows.length > 1 ? rows : 'NO MENU FOUND';
+}
+
+function BOLT_MENU(storeUrl) {
+  storeUrl = String(storeUrl).trim();
+  const key = PropertiesService.getScriptProperties().getProperty('BOLT_KEY');
+  const res = UrlFetchApp.fetch(`${BOLT_WORKER}?key=${encodeURIComponent(key)}&url=${encodeURIComponent(storeUrl)}`,
+    { muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200) return 'HTTP ' + res.getResponseCode();
+  const d = JSON.parse(res.getContentText());
+  LAST_META = d.meta || null;
+  if (!d.items || !d.items.length) return 'NO ITEMS';
+  const rows = [['Item', 'Price', 'Original price', 'Stoc']];
+  d.items.forEach(it => rows.push([it.name, it.price, it.orig || '', it.oos ? 'epuizat' : '']));
+  return rows;
+}
+
+// Dump the whole competitor menu: =FB_MENU("uid")
+function FB_MENU(restaurantUid) {
+  const json = UrlFetchApp.fetch('https://www.foodbooking.com/api/restaurant/' + restaurantUid + '/menu',
+    { muteHttpExceptions: true }).getContentText();
+  const menu = JSON.parse(json);
+  if (!menu.categories) return 'NO ITEMS';
+  const rows = [['Category', 'ID', 'Item', 'Price']];
+  const seen = new Set();
+  for (const cat of menu.categories) {
+    for (const it of cat.items) {
+      rows.push([cat.name, it.id, it.name, it.price]);
+      for (const g of it.groups || []) {
+        for (const o of g.options || []) {
+          if (!(o.price > 0)) continue;                          // free options aren't prices
+          const key = `${g.name.trim()} | ${o.name.trim()}`;
+          if (seen.has(key)) continue;                           // same extra offered on many items
+          seen.add(key);
+          rows.push([`Extra: ${g.name.trim()}`, `x:${key}`, key, o.price]);
+        }
+      }
+    }
+  }
+  return rows;
+}
+
+
+function SITE_MENU(url) {
+  const res = UrlFetchApp.fetch(url, { muteHttpExceptions: true,
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36', 'Accept': 'text/html' } });
+  if (res.getResponseCode() !== 200) return 'HTTP ' + res.getResponseCode();
+  const html = res.getContentText();
+  const rows = [['Item', 'Price', 'Source']];
+  // 1. catalogue items
+  const cat = /av-catalogue-title'>([^<]*)<\/div><div class='av-catalogue-price'>([^<]*)</g;
+  let m;
+  while ((m = cat.exec(html)) !== null) rows.push([m[1].trim(), parseFloat(m[2]), 'catalog']);
+  // 2. featured items
+  const strip = t => t.replace(/<[^>]+>/g, '').replace(/&nbsp;|\u00a0/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+  const parts = html.split(/<h3[^>]*av-special-heading-tag[^>]*>/).slice(1);
+  for (const part of parts) {
+    const name = strip((part.match(/^([\s\S]*?)<\/h3>/) || [])[1] || '');
+    if (!name) continue;
+    const block = part.split(/<h3[^>]*av-special-heading-tag/)[0];
+    const h4s = [...block.matchAll(/<h4[^>]*>([\s\S]*?)<\/h4>/g)].map(x => strip(x[1]));
+    for (const t of h4s) {
+      const mm = t.match(/^(?:([^:]+):\s*)?(\d+(?:[.,]\d+)?)\s*(lei|ron)?$/i);
+      if (!mm) continue;
+      const label = mm[1] ? mm[1].trim() : '';
+      rows.push([label && label.toLowerCase() !== 'burger' ? `${name} ${label}` : name, parseFloat(mm[2].replace(',', '.')), 'featured']);
+    }
+  }
+  return rows.length > 1 ? rows : 'NO ITEMS';
+}
+
+function SITE_MENU(url) {
+  const res = UrlFetchApp.fetch(url, { muteHttpExceptions: true,
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36', 'Accept': 'text/html' } });
+  if (res.getResponseCode() !== 200) return 'HTTP ' + res.getResponseCode();
+  const html = res.getContentText();
+  const strip = t => t.replace(/<[^>]+>/g, '').replace(/&nbsp;|\u00a0/g, ' ').replace(/&amp;/g, '&').replace(/&#8211;|&#8217;/g, "'").replace(/\s+/g, ' ').trim();
+  const rows = [['Item', 'Price', 'Source']];
+
+  // 1. catalogue items
+  const cat = /av-catalogue-title'>([\s\S]*?)<\/div>\s*<div class='av-catalogue-price'>([\s\S]*?)<\/div>/g;
+  let m;
+  while ((m = cat.exec(html)) !== null) rows.push([strip(m[1]), parseFloat(strip(m[2]).replace(',', '.')), 'catalog']);
+
+  // 2. featured items: any <h3>NAME</h3> followed by <h4>Label: price</h4> / <h4>price</h4> before the next <h3>
+  const parts = html.split(/<h3\b[^>]*>/).slice(1);
+  for (const part of parts) {
+    const name = strip((part.match(/^([\s\S]*?)<\/h3>/) || [])[1] || '');
+    if (!name) continue;
+    const h4s = [...part.matchAll(/<h4\b[^>]*>([\s\S]*?)<\/h4>/g)].map(x => strip(x[1]));
+    for (const t of h4s) {
+      const mm = t.match(/^(?:([^:]+):\s*)?(\d+(?:[.,]\d+)?)\s*(lei|ron)?$/i);
+      if (!mm) continue;
+      const label = mm[1] ? mm[1].trim() : '';
+      rows.push([label && label.toLowerCase() !== 'burger' ? `${name} ${label}` : name, parseFloat(mm[2].replace(',', '.')), 'featured']);
+    }
+  }
+  return rows.length > 1 ? rows : 'NO ITEMS';
+}
+
+
+function WOLT_MENU(venueUrl) {
+  venueUrl = String(venueUrl).trim();
+  const slug = venueUrl.replace(/\/+$/, '').split('/').pop();
+  const url = `https://consumer-api.wolt.com/consumer-api/consumer-assortment/v1/venues/slug/${slug}/assortment?language=ro`;
+  const res = UrlFetchApp.fetch(url, { muteHttpExceptions: true, headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' } });
+  if (res.getResponseCode() !== 200) return 'HTTP ' + res.getResponseCode();
+  const d = JSON.parse(res.getContentText());
+  const catOf = {};
+  d.categories.forEach(c => (c.item_ids || []).forEach(id => catOf[id] = c.name));
+  const rows = [['Item', 'Price', 'Category', 'ID']];
+  const seen = {};
+  d.items.forEach(it => { const n = it.name.trim(); seen[n] = (seen[n] || 0) + 1; });
+  d.items.forEach(it => {
+    const n = it.name.trim(), cat = catOf[it.id] || '';
+    rows.push([seen[n] > 1 && cat ? `${n} (${cat})` : n, it.price / 100, cat, it.id]);
+  });
+  return rows;
+}
