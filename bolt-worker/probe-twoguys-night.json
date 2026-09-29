@@ -1,0 +1,396 @@
+{
+  "seenOnScreen": [
+    "Sos 2Hot2Handle",
+    "Cartofi Prajiti",
+    "Apa Plata 500ml",
+    "Apa Minerala 500ml",
+    "Pepsi Doza 330ml",
+    "Pepsi Max Doza 330ml",
+    "Pepsi Twist Doza 330ml",
+    "Mirinda Doza 330ml",
+    "7Up Doza 330ml",
+    "Lipton Piersici Doza 330ml",
+    "Lipton Lamaie Doza 330ml",
+    "Salatā roșii  280g"
+  ],
+  "responses": [
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/ipToLocation?version=FW.1.118&language=en-US&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713310&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 148,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/target/getDeliveryClientAppParameters?event_key=delivery_eater_flags_without_auth&version=FW.1.118&language=en-US&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713310&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 1284,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/getAppLocales?version=FW.1.118&language=en-US&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 1023,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/appOpened?version=FW.1.118&language=en-US&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713310&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 59,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://translation.live.boltsvc.net/exportFileHttp?language=en-US&project=fd-clients&file=Delivery+Client%2Ftranslations.json",
+      "status": 200,
+      "bytes": 122199,
+      "keys": [
+        "appName",
+        "appIntents",
+        "global",
+        "tabs",
+        "medicalConsent",
+        "errors",
+        "orderStatus",
+        "orderClientState",
+        "localisedAlerts",
+        "authErrors",
+        "screens",
+        "verificationSDK",
+        "trackingConsentsSDK",
+        "liveActivity",
+        "loyaltyProgram",
+        "InfoPlist",
+        "webMeta",
+        "webNavigation",
+        "webModal",
+        "components"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://translation.live.boltsvc.net/exportFileHttp?language=ro&project=fd-clients&file=Delivery+Client%2Ftranslations.json",
+      "status": 200,
+      "bytes": 128462,
+      "keys": [
+        "appName",
+        "appIntents",
+        "global",
+        "tabs",
+        "medicalConsent",
+        "errors",
+        "orderStatus",
+        "orderClientState",
+        "localisedAlerts",
+        "authErrors",
+        "screens",
+        "verificationSDK",
+        "trackingConsentsSDK",
+        "liveActivity",
+        "loyaltyProgram",
+        "InfoPlist",
+        "webMeta",
+        "webNavigation",
+        "webModal",
+        "components"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://food.bolt.eu/manifest.json",
+      "status": 200,
+      "bytes": 347,
+      "keys": [
+        "name",
+        "version",
+        "short_name",
+        "description",
+        "icons",
+        "start_url",
+        "background_color",
+        "theme_color",
+        "display"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://translation.live.boltsvc.net/exportFileHttp?language=ro&project=fd-clients&file=Delivery+Client%2Ftranslations.json",
+      "status": 200,
+      "bytes": 128462,
+      "keys": [
+        "appName",
+        "appIntents",
+        "global",
+        "tabs",
+        "medicalConsent",
+        "errors",
+        "orderStatus",
+        "orderClientState",
+        "localisedAlerts",
+        "authErrors",
+        "screens",
+        "verificationSDK",
+        "trackingConsentsSDK",
+        "liveActivity",
+        "loyaltyProgram",
+        "InfoPlist",
+        "webMeta",
+        "webNavigation",
+        "webModal",
+        "components"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/public/getServiceStatus?version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713310&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 287,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/appState/get/v2?version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713310&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 846,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/target/getDeliveryClientAppParameters?event_key=delivery_eater_flags_without_auth&delivery_lat=45.6427&delivery_lng=25.5887&version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713311&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 1284,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/public/getPriceFormatTemplate?city_id=802&version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713311&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 122,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/public/getStaticInfo?version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713311&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 56,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/public/getProviderDetails?delivery_lat=45.6427&delivery_lng=25.5887&provider_id=110855&city_id=802&version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713311&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 5715,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/public/getProviderCampaignsMiniBanners?provider_id=110855&delivery_lat=45.6427&delivery_lng=25.5887&version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713311&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 52,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/public/getProviderAvailabilityStatus?provider_id=110855&version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713311&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 400,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/public/getServiceStatus?city_id=802&version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713311&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 287,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/public/getMenuCategories?provider_id=110855&delivery_lat=45.6427&delivery_lng=25.5887&version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713311&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 17590,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": true,
+      "body": "{\"code\":0,\"message\":\"OK\",\"data\":{\"layout\":\"simple\",\"root_id\":4644337167667951,\"fee_info_keys\":{\"fl_1\":\"+0,50 RON Garanție ambalaj nereutilizabil\"},\"text_keys\":{\"ai_translated_dish\":{\"short\":\"Tradus automat cu IA\",\"title\":\"Despre traduceri\",\"long\":\"Te rugăm să reții că traducerile descrierilor au fost generate automat și pot conține erori sau inexactități. Pentru clarificări sau detalii suplimentare, îți recomandăm să contactezi restaurantul.\"},\"ai_translated_menu\":{\"short\":\"Unele informații au fost traduse cu IA\",\"title\":\"Despre traduceri\",\"long\":\"Te rugăm să reții că traducerile descrierilor au fost generate automat și pot conține erori sau inexactități. Pentru clarificări sau detalii suplimentare, îți recomandăm să contactezi restaurantul.\"}},\"items\":{\"4644337167667951\":{\"type\":\"menu\",\"id\":4644337167667951,\"parent_id\":null,\"child_ids\":[4785074707965406,5770250319753094,5770250319753114,5770250319753086],\"global_stable_context_id\":\"110855_1437675489\",\"index\":0,\"score\":null,\"text_key\":\"ai_translated_menu\"},\"4785074707965406\":{\"type\":\"category\",\"id\":4785074707965406,\"parent_id\":4644337167667951,\"child_ids\":[],\"global_stable_context_id\":\"110855_3743452016\",\"global_product_id\":\"110855_4503599641539714_1778775044908_V7GtOixBhgIzAhDUOBG7AdNg\",\"product_id\":\"4503599641539714_1778775044908_V7GtOixBhgIzAhDUOBG7AdNg\",\"index\":0,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"MIC DEJUN\"},\"availability\":\"available\",\"images\":null,\"slug\":\"4785074707965406-mic-dejun\"},\"5770250319753086\":{\"type\":\"category\",\"id\":5770250319753086,\"parent_id\":4644337167667951,\"child_ids\":[5770250319753087],\"global_stable_context_id\":\"110855_1437675494\",\"global_product_id\":\"110855_tag_58\",\"product_id\":\"tag_58\",\"index\":7,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Salate\"},\"availability\":\"out_of_stock\",\"images\":null,\"slug\":\"5770250319753086-salate\"},\"5770250319753094\":{\"type\":\"category\",\"id\":5770250319753094,\"parent_id\":4644337167667951,\"child_ids\":[5770250319753108,5770250319753110],\"global_stable_context_id\":\"110855_1437675497\",\"global_product_id\":\"110855_tag_66\",\"product_id\":\"tag_66\",\"index\":10,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Extra\"},\"availability\":\"available\",\"images\":null,\"slug\":\"5770250319753094-extra\"},\"5770250319753114\":{\"type\":\"category\",\"id\":5770250319753114,\"parent_id\":4644337167667951,\"child_ids\":[5770250319753115,5770250319753116,5770250319753117,5770250319753118,5770250319753119,5770250319753120,5770250319753121,5770250319753122,5770250319753123],\"global_stable_context_id\":\"110855_1437675498\",\"global_product_id\":\"110855_tag_71\",\"product_id\":\"tag_71\",\"index\":11,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Racoritoare\"},\"availability\":\"available\",\"images\":null,\"slug\":\"5770250319753114-racoritoare\"},\"5770250319753087\":{\"type\":\"dish\",\"id\":5770250319753087,\"parent_id\":5770250319753086,\"child_ids\":[],\"global_stable_context_id\":\"110855_3786555047\",\"global_stable_price_context_id\":\"110855_3786555048\",\"global_product_id\":\"110855_4503599643661187_1780394754967_PtgjZRnjKkhp1PylQw5oxWTU\",\"product_id\":\"4503599643661187_1780394754967_PtgjZRnjKkhp1PylQw5oxWTU\",\"index\":0,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Salatā roșii  280g\"},\"description\":{\"locale\":\"ro-RO\",\"value\":\"Valeriana 10 g, Ceapa rosie 15 g, Ulei masline 10 g, Mac seminte 20 g, Miez seminte dovleac 5 g, Rosii 170 g, Telemea vaca 50 g\\n\\nValeriana, Ceapa rosie, Ulei masline, Mac seminte, Miez seminte dovleac, Rosii, Telemea vaca\\n\\nNutrient Valoare / Portie Valoare / 100g\\nValoare energetica Kcal 320 114\\nGrasimi 32 11.4\\nCarbohidrati 10 3.6\\nFibre 6 2.1\\nProteine 18 6.4\\nSare 1.1 0.39\\nValoare energetica Kj 1338 478\\nAcizi grasi saturati 7.5 2.7\\nCarbohidrati zaharuri 4 1.4\\n\\nAlergeni: mac, seminte de dovleac, lapte\"},\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-06-02/f60a2099-6b2f-4f79-9ac8-e402e5d058a3.jpeg\"}},\"meta\":{\"original_id\":323805091,\"size\":10384007,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":24,\"currency\":\"ron\",\"price_str\":\"24,00 RON\",\"optimistic_price\":{\"value\":24,\"currency\":\"ron\",\"price_str\":\"24,00 RON\"}},\"availability\":\"out_of_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"availability_label\":\"Indisponibil\",\"promo_key\":null},\"5770250319753108\":{\"type\":\"dish\",\"id\":5770250319753108,\"parent_id\":5770250319753094,\"child_ids\":[],\"global_stable_context_id\":\"110855_1437675567\",\"global_stable_price_context_id\":\"110855_1437675568\",\"global_product_id\":\"110855_10037\",\"product_id\":\"10037\",\"index\":13,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Sos 2Hot2Handle\"},\"description\":{\"locale\":\"ro-RO\",\"value\":\"Ardei Habanero, Roșii, Usturoi, Zahăr, Oțet, Sare. 50g\\n\\nValoare energetică Kcal 5.82 / 11.63\\nGrăsimi 0.05 / 0.09\\nCarbohidrați 1.12 / 2.25\\nProteine 0.06 / 0.13\\nSare 1.08 / 2.15\"},\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2025/2025-11-14/cb25a17c-20cc-4219-b38f-2d44ac7be62a.jpeg\"}},\"meta\":{\"original_id\":173690897,\"size\":10626165,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":19,\"currency\":\"ron\",\"price_str\":\"19,00 RON\",\"optimistic_price\":{\"value\":19,\"currency\":\"ron\",\"price_str\":\"19,00 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"promo_key\":null,\"text_key\":\"ai_translated_dish\"},\"5770250319753110\":{\"type\":\"dish\",\"id\":5770250319753110,\"parent_id\":5770250319753094,\"child_ids\":[5770250319753111],\"global_stable_context_id\":\"110855_1437675569\",\"global_stable_price_context_id\":\"110855_1437675570\",\"global_product_id\":\"110855_10607\",\"product_id\":\"10607\",\"index\":15,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Cartofi Prajiti\"},\"description\":{\"locale\":\"ro-RO\",\"value\":\"Cartofi prajiti 200g\"},\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-09-10/bbea145d-11b3-4f64-b06d-41d5b050f6ee.jpeg\"}},\"meta\":{\"original_id\":350384640,\"size\":11173683,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":22,\"currency\":\"ron\",\"price_str\":\"22,00 RON\",\"optimistic_price\":{\"value\":22,\"currency\":\"ron\",\"price_str\":\"22,00 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"only_optional\",\"promo_key\":null},\"5770250319753111\":{\"type\":\"option_multi_select_group\",\"id\":5770250319753111,\"parent_id\":5770250319753110,\"child_ids\":[5770250319753112],\"global_stable_context_id\":\"110855_1437675657\",\"index\":0,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Extra Cartofi\"},\"max\":99,\"min\":0,\"is_required\":false},\"5770250319753112\":{\"type\":\"option_multi_select\",\"id\":5770250319753112,\"parent_id\":5770250319753111,\"child_ids\":[],\"global_stable_context_id\":\"110855_1437676281\",\"global_stable_price_context_id\":\"110855_1437676282\",\"global_product_id\":\"110855_10608\",\"product_id\":\"10608\",\"index\":0,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Mix Parmezan\"},\"description\":null,\"tags\":[],\"price\":{\"value\":5,\"currency\":\"ron\",\"price_str\":\"5,00 RON\",\"optimistic_price\":{\"value\":5,\"currency\":\"ron\",\"price_str\":\"5,00 RON\"}},\"availability\":\"in_stock\",\"min_price_str\":null,\"promo_key\":null},\"5770250319753115\":{\"type\":\"dish\",\"id\":5770250319753115,\"parent_id\":5770250319753114,\"child_ids\":[],\"global_stable_context_id\":\"110855_1437675587\",\"global_stable_price_context_id\":\"110855_1437675588\",\"global_product_id\":\"110855_1813\",\"product_id\":\"1813\",\"index\":0,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Apa Plata 500ml\"},\"description\":null,\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-02-17/16eeca05-3736-4901-b97b-10c360f7a345.jpeg\"}},\"meta\":{\"original_id\":232141726,\"size\":12108960,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\",\"optimistic_price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"fee_info_key\":\"fl_1\",\"promo_key\":null},\"5770250319753116\":{\"type\":\"dish\",\"id\":5770250319753116,\"parent_id\":5770250319753114,\"child_ids\":[],\"global_stable_context_id\":\"110855_1437675589\",\"global_stable_price_context_id\":\"110855_1437675590\",\"global_product_id\":\"110855_1814\",\"product_id\":\"1814\",\"index\":1,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Apa Minerala 500ml\"},\"description\":null,\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-02-17/a5f4d488-eca8-46f6-b455-32bd43eebdd8.jpeg\"}},\"meta\":{\"original_id\":232141978,\"size\":12108960,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\",\"optimistic_price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"fee_info_key\":\"fl_1\",\"promo_key\":null},\"5770250319753117\":{\"type\":\"dish\",\"id\":5770250319753117,\"parent_id\":5770250319753114,\"child_ids\":[],\"global_stable_context_id\":\"110855_1437675591\",\"global_stable_price_context_id\":\"110855_1437675592\",\"global_product_id\":\"110855_1802\",\"product_id\":\"1802\",\"index\":2,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Pepsi Doza 330ml\"},\"description\":null,\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-02-17/be6803b1-4ca0-4beb-8ee1-ea5be786c06e.jpeg\"}},\"meta\":{\"original_id\":232142218,\"size\":10982635,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\",\"optimistic_price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"fee_info_key\":\"fl_1\",\"promo_key\":null},\"5770250319753118\":{\"type\":\"dish\",\"id\":5770250319753118,\"parent_id\":5770250319753114,\"child_ids\":[],\"global_stable_context_id\":\"110855_1437675591\",\"global_stable_price_context_id\":\"110855_1437675592\",\"global_product_id\":\"110855_1802\",\"product_id\":\"1802\",\"index\":3,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Pepsi Max Doza 330ml\"},\"description\":null,\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-02-16/eddf423f-011c-4207-b734-5a8293ae463c.jpeg\"}},\"meta\":{\"original_id\":230959014,\"size\":10314137,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\",\"optimistic_price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"fee_info_key\":\"fl_1\",\"promo_key\":null},\"5770250319753119\":{\"type\":\"dish\",\"id\":5770250319753119,\"parent_id\":5770250319753114,\"child_ids\":[],\"global_stable_context_id\":\"110855_3161615674\",\"global_stable_price_context_id\":\"110855_3161615675\",\"global_product_id\":\"110855_4503599640180156_1771241925828_GraEGzJ469xWY7ivSZxUNkIn\",\"product_id\":\"4503599640180156_1771241925828_GraEGzJ469xWY7ivSZxUNkIn\",\"index\":4,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Pepsi Twist Doza 330ml\"},\"description\":{\"locale\":\"ro-RO\",\"value\":\"330ml\"},\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-02-16/09692c01-8468-4c3e-8a23-f75f77245c89.jpeg\"}},\"meta\":{\"original_id\":230959467,\"size\":10856942,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\",\"optimistic_price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"fee_info_key\":\"fl_1\",\"promo_key\":null},\"5770250319753120\":{\"type\":\"dish\",\"id\":5770250319753120,\"parent_id\":5770250319753114,\"child_ids\":[],\"global_stable_context_id\":\"110855_1437675595\",\"global_stable_price_context_id\":\"110855_1437675596\",\"global_product_id\":\"110855_1815\",\"product_id\":\"1815\",\"index\":5,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Mirinda Doza 330ml\"},\"description\":null,\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-02-18/ecb9e45c-fb6d-4e62-be12-b21ae9970cfe.jpeg\"}},\"meta\":{\"original_id\":233042772,\"size\":10734880,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\",\"optimistic_price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"fee_info_key\":\"fl_1\",\"promo_key\":null},\"5770250319753121\":{\"type\":\"dish\",\"id\":5770250319753121,\"parent_id\":5770250319753114,\"child_ids\":[],\"global_stable_context_id\":\"110855_2613265978\",\"global_stable_price_context_id\":\"110855_2613265979\",\"global_product_id\":\"110855_4503599638402608_1763466881577_Cjz2BAG0EzDa7HFHnsmgEjLL\",\"product_id\":\"4503599638402608_1763466881577_Cjz2BAG0EzDa7HFHnsmgEjLL\",\"index\":6,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"7Up Doza 330ml\"},\"description\":null,\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-04-03/e0d5f325-93cf-40ec-b105-565d2c8318d3.jpeg\"}},\"meta\":{\"original_id\":281780983,\"size\":9862090,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\",\"optimistic_price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"fee_info_key\":\"fl_1\",\"promo_key\":null},\"5770250319753122\":{\"type\":\"dish\",\"id\":5770250319753122,\"parent_id\":5770250319753114,\"child_ids\":[],\"global_stable_context_id\":\"110855_3210919561\",\"global_stable_price_context_id\":\"110855_3210919562\",\"global_product_id\":\"110855_4503599641476854_1771942207883_xjldFRxSKGOUstaYf1zPWfjm\",\"product_id\":\"4503599641476854_1771942207883_xjldFRxSKGOUstaYf1zPWfjm\",\"index\":7,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Lipton Piersici Doza 330ml\"},\"description\":null,\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-04-03/17ca873a-6f71-40df-97b8-aef0493d5245.jpeg\"}},\"meta\":{\"original_id\":281781368,\"size\":10450377,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\",\"optimistic_price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"fee_info_key\":\"fl_1\",\"promo_key\":null},\"5770250319753123\":{\"type\":\"dish\",\"id\":5770250319753123,\"parent_id\":5770250319753114,\"child_ids\":[],\"global_stable_context_id\":\"110855_3210919559\",\"global_stable_price_context_id\":\"110855_3210919560\",\"global_product_id\":\"110855_4503599641476854_1771942259217_MylfV7lqyCVYwlYKCxGl638B\",\"product_id\":\"4503599641476854_1771942259217_MylfV7lqyCVYwlYKCxGl638B\",\"index\":8,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Lipton Lamaie Doza 330ml\"},\"description\":null,\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-04-03/efb938b3-b8cc-467b-b32e-938b9edbc657.jpeg\"}},\"meta\":{\"original_id\":281762239,\"size\":10388331,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\",\"optimistic_price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"fee_info_key\":\"fl_1\",\"promo_key\":null}},\"item_limit\":50,\"min_price_details\":null,\"menu_promos\":{},\"menu_labels\":{},\"compliance_tags\":[{\"age_check_popup_agreement_text\":{\"locale\":\"en-US\",\"value\":\"I can confirm that I am over 18 years old.\"},\"age_check_popup_enabled\":false,\"age_to_be_restricted\":18,\"blurring_enabled\":false,\"description\":\"Alcohol Compliance Tag\",\"is_age_verification_enabled\":false,\"is_enabled\":true,\"is_excluded_from_campaigns\":false,\"priority\":10,\"tag_key\":\"alco\"},{\"age_check_popup_agreement_text\":{\"locale\":\"en-US\",\"value\":\"I can confirm that I am over 18 years old.\"},\"age_check_popup_enabled\":false,\"age_to_be_restricted\":18,\"blurring_enabled\":false,\"description\":\"Energy Compliance Tag\",\"is_age_verification_enabled\":false,\"is_enabled\":true,\"is_excluded_from_campaigns\":false,\"priority\":20,\"tag_key\":\"energy\"},{\"age_check_popup_agreement_text\":{\"locale\":\"en-US\",\"value\":\"I can confirm that I am over 18 years old.\"},\"age_check_popup_enabled\":false,\"age_to_be_restricted\":18,\"blurring_enabled\":false,\"description\":\"Tobacco Compliance Tag\",\"is_age_verification_enabled\":false,\"is_enabled\":true,\"is_excluded_from_campaigns\":false,\"priority\":30,\"tag_key\":\"tobacco\"}],\"additional_info_labels\":{}}}"
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/public/getBannerCarousels?version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713311&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 49,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/public/getSearchTabsContent?version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713311&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 112076,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/public/getNavigationBar?delivery_lat=45.6427&delivery_lng=25.5887&version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713311&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 2486,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/public/getBannerCarousels?version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713311&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 49,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/public/getBannerCarousels?version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713311&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 49,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/public/getProviderCampaignsMiniBanners?provider_id=110855&delivery_lat=45.6427&delivery_lng=25.5887&version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713311&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 52,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/public/getProviderDetails?delivery_lat=45.6427&delivery_lng=25.5887&provider_id=110855&city_id=802&version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713311&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 5715,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/public/getSearchScreenContent?screen_id=30001&delivery_lat=45.6427&delivery_lng=25.5887&city_id=802&version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713311&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 10257,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/public/getScreenContent?screen_id=360003&delivery_lat=45.6427&delivery_lng=25.5887&city_id=802&version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713311&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 293685,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/public/getMenuCategories?provider_id=110855&delivery_lat=45.6427&delivery_lng=25.5887&version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713311&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 17590,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": true,
+      "body": "{\"code\":0,\"message\":\"OK\",\"data\":{\"layout\":\"simple\",\"root_id\":4644337167667951,\"fee_info_keys\":{\"fl_1\":\"+0,50 RON Garanție ambalaj nereutilizabil\"},\"text_keys\":{\"ai_translated_dish\":{\"short\":\"Tradus automat cu IA\",\"title\":\"Despre traduceri\",\"long\":\"Te rugăm să reții că traducerile descrierilor au fost generate automat și pot conține erori sau inexactități. Pentru clarificări sau detalii suplimentare, îți recomandăm să contactezi restaurantul.\"},\"ai_translated_menu\":{\"short\":\"Unele informații au fost traduse cu IA\",\"title\":\"Despre traduceri\",\"long\":\"Te rugăm să reții că traducerile descrierilor au fost generate automat și pot conține erori sau inexactități. Pentru clarificări sau detalii suplimentare, îți recomandăm să contactezi restaurantul.\"}},\"items\":{\"4644337167667951\":{\"type\":\"menu\",\"id\":4644337167667951,\"parent_id\":null,\"child_ids\":[4785074707965406,5770250319753094,5770250319753114,5770250319753086],\"global_stable_context_id\":\"110855_1437675489\",\"index\":0,\"score\":null,\"text_key\":\"ai_translated_menu\"},\"4785074707965406\":{\"type\":\"category\",\"id\":4785074707965406,\"parent_id\":4644337167667951,\"child_ids\":[],\"global_stable_context_id\":\"110855_3743452016\",\"global_product_id\":\"110855_4503599641539714_1778775044908_V7GtOixBhgIzAhDUOBG7AdNg\",\"product_id\":\"4503599641539714_1778775044908_V7GtOixBhgIzAhDUOBG7AdNg\",\"index\":0,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"MIC DEJUN\"},\"availability\":\"available\",\"images\":null,\"slug\":\"4785074707965406-mic-dejun\"},\"5770250319753086\":{\"type\":\"category\",\"id\":5770250319753086,\"parent_id\":4644337167667951,\"child_ids\":[5770250319753087],\"global_stable_context_id\":\"110855_1437675494\",\"global_product_id\":\"110855_tag_58\",\"product_id\":\"tag_58\",\"index\":7,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Salate\"},\"availability\":\"out_of_stock\",\"images\":null,\"slug\":\"5770250319753086-salate\"},\"5770250319753094\":{\"type\":\"category\",\"id\":5770250319753094,\"parent_id\":4644337167667951,\"child_ids\":[5770250319753108,5770250319753110],\"global_stable_context_id\":\"110855_1437675497\",\"global_product_id\":\"110855_tag_66\",\"product_id\":\"tag_66\",\"index\":10,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Extra\"},\"availability\":\"available\",\"images\":null,\"slug\":\"5770250319753094-extra\"},\"5770250319753114\":{\"type\":\"category\",\"id\":5770250319753114,\"parent_id\":4644337167667951,\"child_ids\":[5770250319753115,5770250319753116,5770250319753117,5770250319753118,5770250319753119,5770250319753120,5770250319753121,5770250319753122,5770250319753123],\"global_stable_context_id\":\"110855_1437675498\",\"global_product_id\":\"110855_tag_71\",\"product_id\":\"tag_71\",\"index\":11,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Racoritoare\"},\"availability\":\"available\",\"images\":null,\"slug\":\"5770250319753114-racoritoare\"},\"5770250319753087\":{\"type\":\"dish\",\"id\":5770250319753087,\"parent_id\":5770250319753086,\"child_ids\":[],\"global_stable_context_id\":\"110855_3786555047\",\"global_stable_price_context_id\":\"110855_3786555048\",\"global_product_id\":\"110855_4503599643661187_1780394754967_PtgjZRnjKkhp1PylQw5oxWTU\",\"product_id\":\"4503599643661187_1780394754967_PtgjZRnjKkhp1PylQw5oxWTU\",\"index\":0,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Salatā roșii  280g\"},\"description\":{\"locale\":\"ro-RO\",\"value\":\"Valeriana 10 g, Ceapa rosie 15 g, Ulei masline 10 g, Mac seminte 20 g, Miez seminte dovleac 5 g, Rosii 170 g, Telemea vaca 50 g\\n\\nValeriana, Ceapa rosie, Ulei masline, Mac seminte, Miez seminte dovleac, Rosii, Telemea vaca\\n\\nNutrient Valoare / Portie Valoare / 100g\\nValoare energetica Kcal 320 114\\nGrasimi 32 11.4\\nCarbohidrati 10 3.6\\nFibre 6 2.1\\nProteine 18 6.4\\nSare 1.1 0.39\\nValoare energetica Kj 1338 478\\nAcizi grasi saturati 7.5 2.7\\nCarbohidrati zaharuri 4 1.4\\n\\nAlergeni: mac, seminte de dovleac, lapte\"},\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-06-02/f60a2099-6b2f-4f79-9ac8-e402e5d058a3.jpeg\"}},\"meta\":{\"original_id\":323805091,\"size\":10384007,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":24,\"currency\":\"ron\",\"price_str\":\"24,00 RON\",\"optimistic_price\":{\"value\":24,\"currency\":\"ron\",\"price_str\":\"24,00 RON\"}},\"availability\":\"out_of_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"availability_label\":\"Indisponibil\",\"promo_key\":null},\"5770250319753108\":{\"type\":\"dish\",\"id\":5770250319753108,\"parent_id\":5770250319753094,\"child_ids\":[],\"global_stable_context_id\":\"110855_1437675567\",\"global_stable_price_context_id\":\"110855_1437675568\",\"global_product_id\":\"110855_10037\",\"product_id\":\"10037\",\"index\":13,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Sos 2Hot2Handle\"},\"description\":{\"locale\":\"ro-RO\",\"value\":\"Ardei Habanero, Roșii, Usturoi, Zahăr, Oțet, Sare. 50g\\n\\nValoare energetică Kcal 5.82 / 11.63\\nGrăsimi 0.05 / 0.09\\nCarbohidrați 1.12 / 2.25\\nProteine 0.06 / 0.13\\nSare 1.08 / 2.15\"},\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2025/2025-11-14/cb25a17c-20cc-4219-b38f-2d44ac7be62a.jpeg\"}},\"meta\":{\"original_id\":173690897,\"size\":10626165,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":19,\"currency\":\"ron\",\"price_str\":\"19,00 RON\",\"optimistic_price\":{\"value\":19,\"currency\":\"ron\",\"price_str\":\"19,00 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"promo_key\":null,\"text_key\":\"ai_translated_dish\"},\"5770250319753110\":{\"type\":\"dish\",\"id\":5770250319753110,\"parent_id\":5770250319753094,\"child_ids\":[5770250319753111],\"global_stable_context_id\":\"110855_1437675569\",\"global_stable_price_context_id\":\"110855_1437675570\",\"global_product_id\":\"110855_10607\",\"product_id\":\"10607\",\"index\":15,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Cartofi Prajiti\"},\"description\":{\"locale\":\"ro-RO\",\"value\":\"Cartofi prajiti 200g\"},\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-09-10/bbea145d-11b3-4f64-b06d-41d5b050f6ee.jpeg\"}},\"meta\":{\"original_id\":350384640,\"size\":11173683,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":22,\"currency\":\"ron\",\"price_str\":\"22,00 RON\",\"optimistic_price\":{\"value\":22,\"currency\":\"ron\",\"price_str\":\"22,00 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"only_optional\",\"promo_key\":null},\"5770250319753111\":{\"type\":\"option_multi_select_group\",\"id\":5770250319753111,\"parent_id\":5770250319753110,\"child_ids\":[5770250319753112],\"global_stable_context_id\":\"110855_1437675657\",\"index\":0,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Extra Cartofi\"},\"max\":99,\"min\":0,\"is_required\":false},\"5770250319753112\":{\"type\":\"option_multi_select\",\"id\":5770250319753112,\"parent_id\":5770250319753111,\"child_ids\":[],\"global_stable_context_id\":\"110855_1437676281\",\"global_stable_price_context_id\":\"110855_1437676282\",\"global_product_id\":\"110855_10608\",\"product_id\":\"10608\",\"index\":0,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Mix Parmezan\"},\"description\":null,\"tags\":[],\"price\":{\"value\":5,\"currency\":\"ron\",\"price_str\":\"5,00 RON\",\"optimistic_price\":{\"value\":5,\"currency\":\"ron\",\"price_str\":\"5,00 RON\"}},\"availability\":\"in_stock\",\"min_price_str\":null,\"promo_key\":null},\"5770250319753115\":{\"type\":\"dish\",\"id\":5770250319753115,\"parent_id\":5770250319753114,\"child_ids\":[],\"global_stable_context_id\":\"110855_1437675587\",\"global_stable_price_context_id\":\"110855_1437675588\",\"global_product_id\":\"110855_1813\",\"product_id\":\"1813\",\"index\":0,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Apa Plata 500ml\"},\"description\":null,\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-02-17/16eeca05-3736-4901-b97b-10c360f7a345.jpeg\"}},\"meta\":{\"original_id\":232141726,\"size\":12108960,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\",\"optimistic_price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"fee_info_key\":\"fl_1\",\"promo_key\":null},\"5770250319753116\":{\"type\":\"dish\",\"id\":5770250319753116,\"parent_id\":5770250319753114,\"child_ids\":[],\"global_stable_context_id\":\"110855_1437675589\",\"global_stable_price_context_id\":\"110855_1437675590\",\"global_product_id\":\"110855_1814\",\"product_id\":\"1814\",\"index\":1,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Apa Minerala 500ml\"},\"description\":null,\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-02-17/a5f4d488-eca8-46f6-b455-32bd43eebdd8.jpeg\"}},\"meta\":{\"original_id\":232141978,\"size\":12108960,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\",\"optimistic_price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"fee_info_key\":\"fl_1\",\"promo_key\":null},\"5770250319753117\":{\"type\":\"dish\",\"id\":5770250319753117,\"parent_id\":5770250319753114,\"child_ids\":[],\"global_stable_context_id\":\"110855_1437675591\",\"global_stable_price_context_id\":\"110855_1437675592\",\"global_product_id\":\"110855_1802\",\"product_id\":\"1802\",\"index\":2,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Pepsi Doza 330ml\"},\"description\":null,\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-02-17/be6803b1-4ca0-4beb-8ee1-ea5be786c06e.jpeg\"}},\"meta\":{\"original_id\":232142218,\"size\":10982635,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\",\"optimistic_price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"fee_info_key\":\"fl_1\",\"promo_key\":null},\"5770250319753118\":{\"type\":\"dish\",\"id\":5770250319753118,\"parent_id\":5770250319753114,\"child_ids\":[],\"global_stable_context_id\":\"110855_1437675591\",\"global_stable_price_context_id\":\"110855_1437675592\",\"global_product_id\":\"110855_1802\",\"product_id\":\"1802\",\"index\":3,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Pepsi Max Doza 330ml\"},\"description\":null,\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-02-16/eddf423f-011c-4207-b734-5a8293ae463c.jpeg\"}},\"meta\":{\"original_id\":230959014,\"size\":10314137,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\",\"optimistic_price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"fee_info_key\":\"fl_1\",\"promo_key\":null},\"5770250319753119\":{\"type\":\"dish\",\"id\":5770250319753119,\"parent_id\":5770250319753114,\"child_ids\":[],\"global_stable_context_id\":\"110855_3161615674\",\"global_stable_price_context_id\":\"110855_3161615675\",\"global_product_id\":\"110855_4503599640180156_1771241925828_GraEGzJ469xWY7ivSZxUNkIn\",\"product_id\":\"4503599640180156_1771241925828_GraEGzJ469xWY7ivSZxUNkIn\",\"index\":4,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Pepsi Twist Doza 330ml\"},\"description\":{\"locale\":\"ro-RO\",\"value\":\"330ml\"},\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-02-16/09692c01-8468-4c3e-8a23-f75f77245c89.jpeg\"}},\"meta\":{\"original_id\":230959467,\"size\":10856942,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\",\"optimistic_price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"fee_info_key\":\"fl_1\",\"promo_key\":null},\"5770250319753120\":{\"type\":\"dish\",\"id\":5770250319753120,\"parent_id\":5770250319753114,\"child_ids\":[],\"global_stable_context_id\":\"110855_1437675595\",\"global_stable_price_context_id\":\"110855_1437675596\",\"global_product_id\":\"110855_1815\",\"product_id\":\"1815\",\"index\":5,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Mirinda Doza 330ml\"},\"description\":null,\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-02-18/ecb9e45c-fb6d-4e62-be12-b21ae9970cfe.jpeg\"}},\"meta\":{\"original_id\":233042772,\"size\":10734880,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\",\"optimistic_price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"fee_info_key\":\"fl_1\",\"promo_key\":null},\"5770250319753121\":{\"type\":\"dish\",\"id\":5770250319753121,\"parent_id\":5770250319753114,\"child_ids\":[],\"global_stable_context_id\":\"110855_2613265978\",\"global_stable_price_context_id\":\"110855_2613265979\",\"global_product_id\":\"110855_4503599638402608_1763466881577_Cjz2BAG0EzDa7HFHnsmgEjLL\",\"product_id\":\"4503599638402608_1763466881577_Cjz2BAG0EzDa7HFHnsmgEjLL\",\"index\":6,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"7Up Doza 330ml\"},\"description\":null,\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-04-03/e0d5f325-93cf-40ec-b105-565d2c8318d3.jpeg\"}},\"meta\":{\"original_id\":281780983,\"size\":9862090,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\",\"optimistic_price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"fee_info_key\":\"fl_1\",\"promo_key\":null},\"5770250319753122\":{\"type\":\"dish\",\"id\":5770250319753122,\"parent_id\":5770250319753114,\"child_ids\":[],\"global_stable_context_id\":\"110855_3210919561\",\"global_stable_price_context_id\":\"110855_3210919562\",\"global_product_id\":\"110855_4503599641476854_1771942207883_xjldFRxSKGOUstaYf1zPWfjm\",\"product_id\":\"4503599641476854_1771942207883_xjldFRxSKGOUstaYf1zPWfjm\",\"index\":7,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Lipton Piersici Doza 330ml\"},\"description\":null,\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-04-03/17ca873a-6f71-40df-97b8-aef0493d5245.jpeg\"}},\"meta\":{\"original_id\":281781368,\"size\":10450377,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\",\"optimistic_price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"fee_info_key\":\"fl_1\",\"promo_key\":null},\"5770250319753123\":{\"type\":\"dish\",\"id\":5770250319753123,\"parent_id\":5770250319753114,\"child_ids\":[],\"global_stable_context_id\":\"110855_3210919559\",\"global_stable_price_context_id\":\"110855_3210919560\",\"global_product_id\":\"110855_4503599641476854_1771942259217_MylfV7lqyCVYwlYKCxGl638B\",\"product_id\":\"4503599641476854_1771942259217_MylfV7lqyCVYwlYKCxGl638B\",\"index\":8,\"score\":null,\"name\":{\"locale\":\"ro-RO\",\"value\":\"Lipton Lamaie Doza 330ml\"},\"description\":null,\"tags\":[],\"images\":{\"menu_item_list_v1\":{\"aspect_ratio_map\":{\"original\":{\"1x\":\"\",\"2x\":\"\",\"3x\":\"https://images.bolt.eu/store/2026/2026-04-03/efb938b3-b8cc-467b-b32e-938b9edbc657.jpeg\"}},\"meta\":{\"original_id\":281762239,\"size\":10388331,\"mime_type\":\"image/jpeg\"}}},\"price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\",\"optimistic_price\":{\"value\":9.5,\"currency\":\"ron\",\"price_str\":\"9,50 RON\"}},\"availability\":\"in_stock\",\"available_quantity\":null,\"order_limit_quantity\":null,\"timetables\":[],\"display_options\":{\"is_popular\":false},\"option_group_presence\":\"none\",\"fee_info_key\":\"fl_1\",\"promo_key\":null}},\"item_limit\":50,\"min_price_details\":null,\"menu_promos\":{},\"menu_labels\":{},\"compliance_tags\":[{\"age_check_popup_agreement_text\":{\"locale\":\"en-US\",\"value\":\"I can confirm that I am over 18 years old.\"},\"age_check_popup_enabled\":false,\"age_to_be_restricted\":18,\"blurring_enabled\":false,\"description\":\"Alcohol Compliance Tag\",\"is_age_verification_enabled\":false,\"is_enabled\":true,\"is_excluded_from_campaigns\":false,\"priority\":10,\"tag_key\":\"alco\"},{\"age_check_popup_agreement_text\":{\"locale\":\"en-US\",\"value\":\"I can confirm that I am over 18 years old.\"},\"age_check_popup_enabled\":false,\"age_to_be_restricted\":18,\"blurring_enabled\":false,\"description\":\"Energy Compliance Tag\",\"is_age_verification_enabled\":false,\"is_enabled\":true,\"is_excluded_from_campaigns\":false,\"priority\":20,\"tag_key\":\"energy\"},{\"age_check_popup_agreement_text\":{\"locale\":\"en-US\",\"value\":\"I can confirm that I am over 18 years old.\"},\"age_check_popup_enabled\":false,\"age_to_be_restricted\":18,\"blurring_enabled\":false,\"description\":\"Tobacco Compliance Tag\",\"is_age_verification_enabled\":false,\"is_enabled\":true,\"is_excluded_from_campaigns\":false,\"priority\":30,\"tag_key\":\"tobacco\"}],\"additional_info_labels\":{}}}"
+    },
+    {
+      "url": "https://deliveryuser.live.boltsvc.net/deliveryClient/public/getScreenContent?screen_id=120001&delivery_lat=45.6427&delivery_lng=25.5887&city_id=802&version=FW.1.118&language=ro-RO&session_id=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9eater1790713311&distinct_id=%24device%3A88b8d0bd-0dfc-4f45-9819-9e2deb299aa7&country=at&device_name=web&device_os_version=web&deviceId=cde65427-5d8d-4da0-b8e6-8b79ecac3ea9&deviceType=web",
+      "status": 200,
+      "bytes": 17965,
+      "keys": [
+        "code",
+        "message",
+        "data"
+      ],
+      "isMenu": false
+    }
+  ]
+}

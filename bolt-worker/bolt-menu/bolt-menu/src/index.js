@@ -59,18 +59,6 @@ export default {
       await page.waitForFunction(() => /RON/.test(document.body.innerText), { timeout: 30000 });
       await new Promise(r => setTimeout(r, 2000));
 
-      if (probe) {
-        await new Promise(r => setTimeout(r, 3000));
-        const seen = Object.keys(await page.evaluate(extract));
-        // keep full bodies only for responses that mention a dish we can see on screen (= the menu)
-        const out = captured.map(c => {
-          let keys = null; try { keys = Object.keys(JSON.parse(c.text)); } catch (e) {}
-          const isMenu = seen.some(n => c.text.includes(JSON.stringify(n).slice(1, -1)));
-          return { url: c.url, status: c.status, bytes: c.bytes, keys, isMenu, body: isMenu ? c.text.slice(0, 800000) : undefined };
-        });
-        return new Response(JSON.stringify({ seenOnScreen: seen, responses: out }), { headers: { 'content-type': 'application/json' } });
-      }
-
       // the list only renders what's visible, so scroll down and collect as we go
       // the list only renders what's visible: wheel-scroll and collect until nothing new shows up
       // find the inner scrollable list and move it programmatically (wheel alone is unreliable here)
@@ -97,6 +85,18 @@ export default {
         await new Promise(r => setTimeout(r, 600));
       }
       Object.assign(items, await page.evaluate(extract));
+
+      if (probe) {
+        const seen = Object.keys(items);
+        // full bodies for menu / store responses only (menu = mentions a dish we saw on screen)
+        const out = captured.map(c => {
+          let keys = null; try { keys = Object.keys(JSON.parse(c.text)); } catch (e) {}
+          const isMenu = seen.some(n => c.text.includes(JSON.stringify(n).slice(1, -1)));
+          const keep = isMenu || /getMenu|getProvider(Details|AvailabilityStatus)/.test(c.url);
+          return { url: c.url, status: c.status, bytes: c.bytes, keys, isMenu, body: keep ? c.text.slice(0, 800000) : undefined };
+        });
+        return new Response(JSON.stringify({ seenOnScreen: seen, responses: out }), { headers: { 'content-type': 'application/json' } });
+      }
       const meta = await page.evaluate(() => {
         const t = document.body.innerText;
         const m = t.match(/\n(\d[.,]\d)\n\((\d+\+?)\)\n([\d,]+)\s*RON\nlivrare\n+([\d–-]+)\nmin/);
