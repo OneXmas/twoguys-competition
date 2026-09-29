@@ -69,7 +69,7 @@ const COMPETITORS = [
 
 const OWN_CHANNELS = ['Mypassage', 'TwoGuys - G', 'TwoGuys - W', 'TwoGuys - B', 'TheSmash - G', 'TheSmash - W', 'TheSmash - B'];
 
-const ALERT_EMAIL = 'test123@gmail.com' ;
+const ALERT_EMAIL = 'craciun.lex@gmail.com';
 const REPORT_SHEET = 'Reports', SNAP_SHEET = '_Snapshot', LOG_SHEET = 'RunLog';
 const HISTORY_SHEET = 'History';
 
@@ -81,7 +81,7 @@ function setupReports() {
     if (!sh) { sh = ss.insertSheet(name); sh.appendRow(headers); sh.setFrozenRows(1); }
     if (hide) sh.hideSheet();
   };
-  mk(REPORT_SHEET, ['Date','Competitor','Change','Item','Old price','New price','Diff','Diff %'], false);
+  mk(REPORT_SHEET, REPORT_HEADERS, false);
   mk(SNAP_SHEET,   ['Competitor','Item','Price'], true);
   mk(LOG_SHEET,    ['Date','Competitor','Items found','Status'], false);
   mk(HISTORY_SHEET, ['Date','Competitor','Item','Price','Disc %'], false);
@@ -140,20 +140,61 @@ const RENAME_THRESHOLD = 0.8;
 
 
 
+// ===== CHANGE FILTERS — edit here =====
+const FILTERS = {
+  missingRuns: 3,          // daily runs an item must be absent before it is reported as REMOVED (out-of-stock blips stay quiet)
+  minDiffLei: 0,           // ignore price changes smaller than this many lei…
+  minDiffPct: 0,           // …or smaller than this share (0.03 = 3%). 0 = report every change
+  ignoreItems: /^(popular|stoc epuizat)$/i,   // scraper junk, never tracked
+  massRename: { min: 10, share: 0.5 },         // ≥10 renames covering ≥50% of a menu = platform format change → one summary line
+  forgetRemovedDays: 60,   // a delisted item that comes back within this many days is reported as RETURNED, not ADDED
+};
+const REMOVED_SHEET = '_Removed';
+const REPORT_HEADERS = ['Date', 'Competitor', 'Change', 'Item', 'Old price', 'New price', 'Diff', 'Diff %'];
+
+// same product, different spelling: case, diacritics, HTML entities, punctuation, "330 ml" vs "330ml", "gr" vs "g"
+function cosmeticKey(s) {
+  return decode(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ').replace(/(\d) (ml|l|g|gr|kg|cl|buc)\b/g, '$1$2').replace(/(\d)gr\b/g, '$1g').trim();
+}
+
+function ensureHeader(sh, headers) {
+  if (String(sh.getRange(1, 1).getValue()) === headers[0]) return;
+  sh.insertRowBefore(1);
+  sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sh.setFrozenRows(1);
+}
+
 function dailyCheck() {
-  const MISSING_RUNS = 2
-  const ss = SpreadsheetApp.getActive();
+  const ss = SpreadsheetApp.getActive(), tz = ss.getSpreadsheetTimeZone();
   SpreadsheetApp.flush();
   const fetchStatus = refreshSources();
-  const today = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+  const today = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  const ymd = v => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy-MM-dd')
+    : /^\d{4}-\d\d-\d\d/.test(String(v)) ? String(v).slice(0, 10)
+    : v ? Utilities.formatDate(new Date(v), tz, 'yyyy-MM-dd') : today;
+  const daysSince = d => Math.round((new Date(today) - new Date(d)) / 864e5);
+  const round2 = x => Math.round(x * 100) / 100;
   const rep = ss.getSheetByName(REPORT_SHEET), snap = ss.getSheetByName(SNAP_SHEET), log = ss.getSheetByName(LOG_SHEET);
+  ensureHeader(rep, REPORT_HEADERS);
+  const idTabs = new Set(COMPETITORS.filter(c => c.idCol).map(c => c.sheet));
 
-  // snapshot: Competitor | Key | Item | Price   (legacy rows: Competitor | Item | Price | '')
+  // snapshot: Competitor | Key | Item | Price | Disc % | First seen | Missing
+  // tabs without an ID column are keyed by cosmeticKey(name), so "OUĂ BENEDICT" and "Ouă Benedict" are the same item
   const snapRows = snap.getLastRow() > 1 ? snap.getRange(2, 1, snap.getLastRow() - 1, 7).getValues() : [];
   const old = {};
   snapRows.forEach(([c, key, name, price, disc, first, miss]) => {
-    (old[c] = old[c] || {})[String(key)] = { key: String(key), name: String(name), price, disc: Number(disc) || 0,
-      first: first ? String(first) : today, miss: Number(miss) || 0 };
+    const k = idTabs.has(c) ? String(key) : cosmeticKey(name);
+    (old[c] = old[c] || {})[k] = { key: k, name: String(name), price, disc: Number(disc) || 0, first: ymd(first), miss: Number(miss) || 0 };
+  });
+
+  // recently delisted items, so a comeback is reported as RETURNED
+  let remSh = ss.getSheetByName(REMOVED_SHEET);
+  if (!remSh) { remSh = ss.insertSheet(REMOVED_SHEET); remSh.appendRow(['Competitor', 'Key', 'Item', 'Price', 'Removed on']); remSh.hideSheet(); }
+  const gone = {};
+  (remSh.getLastRow() > 1 ? remSh.getRange(2, 1, remSh.getLastRow() - 1, 5).getValues() : []).forEach(([c, key, name, price, since]) => {
+    since = ymd(since);
+    if (daysSince(since) <= FILTERS.forgetRemovedDays) (gone[c] = gone[c] || {})[String(key)] = { name: String(name), price, since };
   });
 
   const changes = [], logRows = [], newSnap = [];
@@ -170,12 +211,12 @@ function dailyCheck() {
     const cur = {};
     const prev = old[cfg.sheet];
     names.forEach((n, k) => {
-      const name = String(n || '').replace(/[\u00a0\s]+/g, ' ').trim(), shown = Number(prices[k]);
-      if (!name || isNaN(shown) || shown <= 0) return;
+      const name = String(n || '').replace(/[ \s]+/g, ' ').trim(), shown = Number(prices[k]);
+      if (!name || FILTERS.ignoreItems.test(name) || isNaN(shown) || shown <= 0) return;
       const o = Number(origs[k]);
       const list = (o > shown) ? o : shown;                       // real price
       const disc = list > shown ? Math.round((1 - shown / list) * 100) : 0;
-      const key = cfg.idCol && ids[k] !== '' && ids[k] != null ? String(ids[k]) : name;
+      const key = cfg.idCol && ids[k] !== '' && ids[k] != null ? String(ids[k]) : cosmeticKey(name);
       cur[key] = { key, name, price: list, shown, disc, first: (prev && prev[key] && prev[key].first) || today, miss: 0 };
     });
     const count = Object.keys(cur).length;
@@ -192,25 +233,34 @@ function dailyCheck() {
     if (!prev) {
       logRows.push([today, cfg.sheet, count, 'INITIAL BASELINE']);
     } else {
-      const added = [], removed = [];
-      const pushDisc = (name, r, o) => {
-        if (r.disc && r.disc !== o.disc) changes.push([today, cfg.sheet, 'DISCOUNT', `${name} (-${r.disc}%)`, r.price, r.shown, r.shown - r.price, -r.disc / 100]);
-        else if (!r.disc && o.disc) changes.push([today, cfg.sheet, 'DISCOUNT_ENDED', name, '', r.price, '', '']);
+      let tabChanges = [];
+      const push = (type, item, oldP, newP) => {
+        const d = oldP !== '' && newP !== '' ? round2(newP - oldP) : 0;
+        tabChanges.push([today, cfg.sheet, type, item, oldP, newP, d || '', d ? d / oldP : '']);
       };
+      const pushDisc = (name, r, o) => {
+        if (r.disc && r.disc !== o.disc) push('DISCOUNT', `${name} (-${r.disc}%)`, r.price, r.shown);
+        else if (!r.disc && o.disc) push('DISCOUNT_ENDED', name, '', r.price);
+      };
+      const moved = (d, base) => d !== 0 && Math.abs(d) >= FILTERS.minDiffLei && Math.abs(d / base) >= FILTERS.minDiffPct;
+      const added = [], removed = [];
+
       for (const r of Object.values(cur)) {
         const o = prev[r.key];
         if (!o) { added.push(r); continue; }
-        const d = r.price - o.price;
-        if (o.name !== r.name) changes.push([today, cfg.sheet, 'RENAMED', `${o.name} → ${r.name}`, o.price, r.price, d !== 0 ? d : '', d !== 0 ? d / o.price : '']);
-        else if (d !== 0) changes.push([today, cfg.sheet, 'PRICE_CHANGED', r.name, o.price, r.price, d, d / o.price]);
+        const d = round2(r.price - o.price);
+        if (d !== 0 && !moved(d, o.price)) r.price = o.price;   // below threshold: keep old price so small steps add up
+        const renamed = o.name !== r.name && cosmeticKey(o.name) !== cosmeticKey(r.name);
+        if (renamed) push('RENAMED', `${o.name} → ${r.name}`, o.price, r.price);
+        else if (moved(d, o.price)) push('PRICE_CHANGED', r.name, o.price, r.price);
         pushDisc(r.name, r, o);
       }
       for (const o of Object.values(prev)) {
         if (cur[o.key]) continue;
-        if (o.miss + 1 < MISSING_RUNS) { newSnap.push([cfg.sheet, o.key, o.name, o.price, o.disc, o.first, o.miss + 1]); continue; } // pending, keep quietly
+        if (o.miss + 1 < FILTERS.missingRuns) { newSnap.push([cfg.sheet, o.key, o.name, o.price, o.disc, o.first, o.miss + 1]); continue; } // pending, keep quietly
         removed.push(o);
       }
-      
+
       const usedAdd = new Set();
       for (const o of removed) {
         let best = null, bestScore = 0;
@@ -221,16 +271,30 @@ function dailyCheck() {
         }
         if (best && bestScore >= RENAME_THRESHOLD) {
           usedAdd.add(best.key);
-          const d = best.price - o.price;
-          changes.push([today, cfg.sheet, 'RENAMED', `${o.name} → ${best.name}`, o.price, best.price, d !== 0 ? d : '', d !== 0 ? d / o.price : '']);
+          if (cosmeticKey(o.name) !== cosmeticKey(best.name)) push('RENAMED', `${o.name} → ${best.name}`, o.price, best.price);
+          else if (moved(round2(best.price - o.price), o.price)) push('PRICE_CHANGED', best.name, o.price, best.price);
           pushDisc(best.name, best, o);
         } else {
-          const days = Math.round((new Date(today) - new Date(o.first)) / 864e5);
-          changes.push([today, cfg.sheet, 'REMOVED', `${o.name} (${days} zile)`, o.price, '', '', '']);        }
+          push('REMOVED', `${o.name} (${daysSince(o.first)} zile)`, o.price, '');
+          (gone[cfg.sheet] = gone[cfg.sheet] || {})[o.key] = { name: o.name, price: o.price, since: today };
+        }
       }
-      for (const a of added) if (!usedAdd.has(a.key)) {
-        changes.push([today, cfg.sheet, 'ADDED', a.name + (a.disc ? ` (-${a.disc}%)` : ''), '', a.shown, '', '']);
+      for (const a of added) {
+        if (usedAdd.has(a.key)) continue;
+        const g = gone[cfg.sheet] && gone[cfg.sheet][a.key];
+        if (g) {
+          push('RETURNED', `${a.name} (lipsă ~${daysSince(g.since) + FILTERS.missingRuns - 1} zile)`, g.price, a.shown);
+          delete gone[cfg.sheet][a.key];
+        } else push('ADDED', a.name + (a.disc ? ` (-${a.disc}%)` : ''), '', a.shown);
       }
+
+      // platform reformatted its names (e.g. Wolt 18 Sep): one summary line instead of dozens of renames
+      const plainRenames = tabChanges.filter(c => c[2] === 'RENAMED' && c[6] === '');
+      if (plainRenames.length >= FILTERS.massRename.min && plainRenames.length >= count * FILTERS.massRename.share) {
+        tabChanges = tabChanges.filter(c => !plainRenames.includes(c));
+        tabChanges.push([today, cfg.sheet, 'RENAMED', `${plainRenames.length} produse redenumite deodată (schimbare de format pe platformă)`, '', '', '', '']);
+      }
+      changes.push(...tabChanges);
       logRows.push([today, cfg.sheet, count, 'OK']);
     }
     Object.values(cur).forEach(r => newSnap.push([cfg.sheet, r.key, r.name, r.price, r.disc, r.first, r.miss]));
@@ -253,11 +317,15 @@ function dailyCheck() {
   snap.getRange(1, 1, 1, 7).setValues([['Competitor', 'Key', 'Item', 'Price', 'Disc %', 'First seen', 'Missing']]);
   if (snap.getLastRow() > 1) snap.getRange(2, 1, snap.getLastRow() - 1, 7).clearContent();
   if (newSnap.length) snap.getRange(2, 1, newSnap.length, 7).setValues(newSnap);
-    const hs = ss.getSheetByName(HISTORY_SHEET);
+  const hs = ss.getSheetByName(HISTORY_SHEET);
   if (hs && newSnap.length) {
     const histRows = newSnap.map(([c, key, name, price, disc]) => [today, c, name, price, disc || '']);
     hs.getRange(hs.getLastRow() + 1, 1, histRows.length, 5).setValues(histRows);
   }
+  const remRows = [];
+  Object.entries(gone).forEach(([c, m]) => Object.entries(m).forEach(([k, g]) => remRows.push([c, k, g.name, g.price, g.since])));
+  if (remSh.getLastRow() > 1) remSh.getRange(2, 1, remSh.getLastRow() - 1, 5).clearContent();
+  if (remRows.length) remSh.getRange(2, 1, remRows.length, 5).setValues(remRows);
 
   const anyFailed = logRows.some(r => String(r[3]).startsWith('FETCH'));
   if (changes.length || anyFailed) sendAlert(today, changes, logRows);
@@ -389,7 +457,7 @@ const MATRIX_SHEET = 'MatchMatrix';
 
 function resetAll() {
   const ss = SpreadsheetApp.getActive();
-  [REPORT_SHEET, LOG_SHEET, HISTORY_SHEET, SNAP_SHEET].forEach(name => {
+  [REPORT_SHEET, LOG_SHEET, HISTORY_SHEET, SNAP_SHEET, REMOVED_SHEET].forEach(name => {
     const sh = ss.getSheetByName(name);
     if (sh && sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, sh.getLastColumn()).clearContent();
   });
@@ -412,7 +480,7 @@ const MAP_PRICE_BAND = [0.6, 1.8];
 
 
 function decode(t) {
-  return String(t).replace(/&#(\d+);/g, (_, n) => String.fromCharCode(n))
+  return String(t).replace(/&#(\d+);/g, (_, n) => String.fromCharCode(n)).replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
     .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#039;|&apos;/g, "'").replace(/&nbsp;/g, ' ').trim();
 }
 

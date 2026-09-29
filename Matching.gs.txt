@@ -195,6 +195,6 @@ function migrateCompMap() {
 }
 
 
-const LLM_MODEL = 'claude-sonnet-5';
+const LLM_MODEL = 'claude-sonnet-5-5';
 const LLM_MARKER = '≈';
 

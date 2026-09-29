@@ -1,14 +1,24 @@
 // ===== EMAIL CONFIG — edit here =====
 const EMAIL_CFG = {
-  subject: (n, date) => `🍔 Competiție: ${n} ${plural(n)} (${date})`,
+  subject: (nComp, nOwn, date) => `🍔 Competiție: ${nComp ? `${nComp} ${plural(nComp)}` : 'fără modificări'}${nOwn ? ` · la noi: ${nOwn}` : ''} (${date})`,
   title: 'Raport competiție',
   footer: 'Raport automat generat zilnic numai dacă există modificări față de ziua precedentă',
   buttonText: 'Deschide fisier RAPORT',
-  labels: { ADDED: 'ADĂUGAT', REMOVED: 'DELISTAT', PRICE_CHANGED: 'Preț NOU', SOURCE_LOST: 'Sursă pierdută' },
+  ownTitle: 'Canalele noastre',
+  collapseAfter: 5,        // more than this many ADDED/REMOVED/RETURNED for one shop → a single summary row
+  labels: {
+    PRICE_CHANGED: 'Preț NOU', DISCOUNT: 'PROMO', DISCOUNT_ENDED: 'PROMO ÎNCHEIAT', ADDED: 'ADĂUGAT',
+    RETURNED: 'REVENIT', REMOVED: 'DELISTAT', RENAMED: 'REDENUMIT', SOURCE_LOST: 'Sursă pierdută',
+  },
+  order: ['SOURCE_LOST', 'PRICE_CHANGED', 'DISCOUNT', 'DISCOUNT_ENDED', 'ADDED', 'RETURNED', 'REMOVED', 'RENAMED'],
   colors: {
     accent:   '#ff6b00',   // top/bottom bar + header
     ADDED:    '#16a34a',   // green
+    RETURNED: '#65a30d',   // olive
     REMOVED:  '#6b7280',   // grey
+    RENAMED:  '#0891b2',   // teal
+    DISCOUNT: '#db2777',   // pink
+    DISCOUNT_ENDED: '#9ca3af',
     up:       '#dc2626',   // price went up — red
     down:     '#2563eb',   // price went down — blue
     headerBg: '#111827',
@@ -18,46 +28,78 @@ const EMAIL_CFG = {
 };
 
 const plural = n => n === 1 ? 'modificare' : 'modificări';
+const isOwnTab = tab => OWN_CHANNELS.includes(tab) || tab === 'Burgerbrasov';
 
 
 function sendAlert(today, changes, logRows) {
   const C = EMAIL_CFG, col = C.colors;
-  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const fmt = v => v === '' ? '' : Number(v).toFixed(2);
+  const esc = s => String(decode(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const fmt = v => v === '' || v == null ? '' : Number(v).toFixed(2);
+  const badge = (type, color) => `<span style="display:inline-block;padding:2px 8px;border-radius:10px;background:${color};color:#fff;font-size:11px;font-weight:700;">${C.labels[type] || type}</span>`;
+  const rank = t => { const i = C.order.indexOf(t); return i < 0 ? 99 : i; };
 
   const byComp = {};
   changes.forEach(r => (byComp[r[1]] = byComp[r[1]] || []).push(r));
 
-  let body = '';
-  for (const [comp, rows] of Object.entries(byComp)) {
-    body += `
-    <div style="font-size:15px;font-weight:700;color:#111827;margin:18px 0 6px;">${esc(comp)}
+  const shopBlock = (comp, rows) => {
+    rows = [...rows].sort((a, b) => rank(a[2]) - rank(b[2]));
+    // long ADDED/REMOVED/RETURNED lists (menu reshuffle, category switched off) → one row each
+    const out = [];
+    for (const type of [...new Set(rows.map(r => r[2]))]) {
+      const same = rows.filter(r => r[2] === type);
+      if (['ADDED', 'REMOVED', 'RETURNED'].includes(type) && same.length > C.collapseAfter) {
+        const shown = same.slice(0, 8).map(r => r[3]).join(', ');
+        out.push([today, comp, type, `${same.length} produse: ${shown}${same.length > 8 ? `, … (+${same.length - 8})` : ''}`, '', '', '', '']);
+      } else out.push(...same);
+    }
+    let html = `
+    <div style="font-size:15px;font-weight:700;color:#111827;margin:18px 0 6px;text-align:left;">${esc(comp)}
       <span style="font-weight:400;color:#6b7280;font-size:13px;">— ${rows.length} ${plural(rows.length)}</span></div>
     <table width="100%" cellpadding="6" cellspacing="0" border="0" style="border:1px solid #e5e7eb;border-radius:8px;font-size:13px;">
       <tr style="background:${col.headerBg};color:#fff;">
         <th align="center">Modificare</th><th align="center">Articol</th><th align="center">Vechi</th><th align="center">Nou</th><th align="center">Dif</th>
       </tr>`;
-    rows.forEach((r, i) => {
+    out.forEach((r, i) => {
       const type = r[2], d = r[6];
-      const badgeColor = type === 'PRICE_CHANGED' ? (d > 0 ? col.up : col.down) : col[type];
-      const diffTxt = d === '' ? '' : `${d > 0 ? '▲' : '▼'} ${fmt(Math.abs(d))} (${(Math.abs(r[7]) * 100).toFixed(1)}%)`;
-      body += `
+      const badgeColor = ['PRICE_CHANGED', 'RETURNED'].includes(type) && d !== '' ? (d > 0 ? col.up : col.down) : (col[type] || '#6b7280');
+      const diffTxt = d === '' || d == null ? '' : `${d > 0 ? '▲' : '▼'} ${fmt(Math.abs(d))} (${(Math.abs(r[7]) * 100).toFixed(1)}%)`;
+      html += `
       <tr style="background:${i % 2 ? col.rowAlt : '#fff'};">
-        <td><span style="display:inline-block;padding:2px 8px;border-radius:10px;background:${badgeColor};color:#fff;font-size:11px;font-weight:700;">${C.labels[type]}</span></td>
-        <td>${esc(r[3])}</td>
+        <td>${badge(type, badgeColor)}</td>
+        <td align="left">${esc(r[3])}</td>
         <td align="right">${fmt(r[4])}</td>
         <td align="right"><b>${fmt(r[5])}</b></td>
         <td align="right" style="color:${badgeColor};font-weight:700;">${diffTxt}</td>
       </tr>`;
     });
-    body += '</table>';
+    return html + '</table>';
+  };
+
+  const comps = Object.keys(byComp).filter(c => !isOwnTab(c)), own = Object.keys(byComp).filter(isOwnTab);
+  const count = list => list.reduce((s, c) => s + byComp[c].length, 0);
+  const nComp = count(comps), nOwn = count(own);
+
+  // one-line summary: how many of each change type among competitors
+  const perType = {};
+  comps.forEach(c => byComp[c].forEach(r => perType[r[2]] = (perType[r[2]] || 0) + 1));
+  const summary = Object.keys(perType).sort((a, b) => rank(a) - rank(b))
+    .map(t => `${badge(t, col[t] || (t === 'PRICE_CHANGED' ? col.up : '#6b7280'))} ${perType[t]}`).join(' &nbsp; ');
+
+  let body = summary ? `<div style="margin:10px 0 4px;font-size:13px;">${summary}</div>` : '';
+  comps.forEach(c => body += shopBlock(c, byComp[c]));
+  if (!comps.length) body += `<p style="font-size:13px;color:#6b7280;">Nicio modificare la concurență azi.</p>`;
+  if (own.length) {
+    body += `<div style="font-size:16px;font-weight:800;color:#111827;margin:28px 0 0;padding-top:14px;border-top:2px solid ${col.accent};text-align:left;">${C.ownTitle}</div>`;
+    own.forEach(c => body += shopBlock(c, byComp[c]));
   }
 
   const failed = logRows.filter(r => String(r[3]).startsWith('FETCH'));
   const warn = failed.length
-    ? `<div style="margin-top:16px;padding:10px;background:#fef3c7;border-left:4px solid #f59e0b;font-size:13px;">
-        ⚠️ Not checked today (fetch failed): <b>${esc(failed.map(r => r[1]).join(', '))}</b></div>` : '';
+    ? `<div style="margin-top:16px;padding:10px;background:#fef3c7;border-left:4px solid #f59e0b;font-size:13px;text-align:left;">
+        ⚠️ Neverificat azi (eroare la citire): <b>${esc(failed.map(r => r[1]).join(', '))}</b></div>` : '';
 
+  const ss = SpreadsheetApp.getActive(), rep = ss.getSheetByName(REPORT_SHEET);
+  const button = `<a href="${ss.getUrl()}#gid=${rep.getSheetId()}" style="display:inline-block;margin-top:18px;padding:10px 18px;background:${col.accent};color:#fff;text-decoration:none;border-radius:8px;font-weight:700;font-size:13px;">${C.buttonText}</a>`;
 
   const html = `
   <div style="background:#f3f4f6;padding:20px 8px;font-family:Arial,sans-serif;">
@@ -65,14 +107,16 @@ function sendAlert(today, changes, logRows) {
     <div style="height:5px;background:${col.accent};"></div>
     <div style="padding:20px;border-bottom:1px solid #e5e7eb;text-align:center;">
       <div style="font-size:18px;font-weight:800;color:#111827;">${C.title}</div>
+      <div style="font-size:13px;color:#6b7280;">${today}</div>
       ${body}
       ${warn}
+      ${button}
       <div style="font-size:11px;color:#9ca3af;margin-top:16px;text-align:center;">${C.footer}</div>
     </div>
     <div style="height:5px;background:${col.accent};"></div>
   </div></div>`;
 
-  MailApp.sendEmail({ to: ALERT_EMAIL,     subject: changes.length ? C.subject(changes.length, today) : `⚠️ Sursă fără date (${today})`, htmlBody: html });
+  MailApp.sendEmail({ to: ALERT_EMAIL, subject: changes.length ? C.subject(nComp, nOwn, today) : `⚠️ Sursă fără date (${today})`, htmlBody: html });
 }
 
 
