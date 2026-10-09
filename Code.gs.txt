@@ -48,7 +48,7 @@ const COMPETITORS = [
   { sheet: 'Egg&Smash - G',                   nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/egg-smash-house-brv' },
   { sheet: 'Vivo - G',                        nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/vivo-brv' },
   { sheet: 'Smash by Vivo - G',               nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/smash-by-vivo-brv' },
-  { sheet: 'Macros - G',                      nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/marcos-brv' },
+  { sheet: 'Marcos - G',                      nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/marcos-brv' },
   { sheet: 'Dafud - G',                       nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/d-fud-dudes-food-truck-brv-1' },
   { sheet: 'Old Jack - G',                    nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/old-jack-burger-house-br' },
   { sheet: 'Justinn Burger Store - G',        nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/justinn-burgers-brv' },
@@ -61,7 +61,7 @@ const COMPETITORS = [
   { sheet: 'Ramore - W',     nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/ramore-fresh-food-braov-6a61e5749d5d06a0265534bb' },
   // competitors – Bolt
   { sheet: 'Egg&Smash - B',       nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/832880-egg-smash-house/', midday: true },
-  { sheet: 'Macros - B',          nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/196690-marcos-burger/', midday: true },
+  { sheet: 'Marcos - B',          nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/196690-marcos-burger/', midday: true },
   { sheet: 'Dafud - B',           nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/203900-dafud/', midday: true },
   { sheet: 'Old Jack - B',        nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/1132692-old-jack-burger-house/', midday: true },
   { sheet: 'Romanian Burger - B', nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/189882-romanian-burger/', midday: true },
@@ -329,6 +329,22 @@ function dailyCheck() {
 
   const anyFailed = logRows.some(r => String(r[3]).startsWith('FETCH'));
   if (changes.length || anyFailed) sendAlert(today, changes, logRows);
+}
+
+
+// One-time: rename competitor tabs and every reference to them (snapshot, reports, history, log, maps). Run once, then delete.
+function renameCompetitorTabs() {
+  const RENAMES = { 'Macros - G': 'Marcos - G', 'Macros - B': 'Marcos - B' };
+  const ss = SpreadsheetApp.getActive();
+  for (const [from, to] of Object.entries(RENAMES)) { const sh = ss.getSheetByName(from); if (sh && !ss.getSheetByName(to)) sh.setName(to); }
+  // column A of CompMap/MatchMatrix/Channels holds products; competitor names are in row 1 there, and in column A/B of the log-type tabs
+  for (const sh of ss.getSheets()) {
+    if (sh.getLastRow() < 1 || sh.getLastColumn() < 1) continue;
+    const rng = sh.getRange(1, 1, sh.getLastRow(), sh.getLastColumn()), vals = rng.getValues();
+    let hit = 0;
+    vals.forEach(row => row.forEach((v, i) => { if (RENAMES[v]) { row[i] = RENAMES[v]; hit++; } }));
+    if (hit) { rng.setValues(vals); Logger.log(); }
+  }
 }
 
 
