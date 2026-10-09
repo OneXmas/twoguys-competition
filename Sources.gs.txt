@@ -17,17 +17,57 @@ function JSONLD_MENU(pageUrl) {
   return rows.length > 1 ? rows : 'NO MENU FOUND';
 }
 
-function BOLT_MENU(storeUrl) {
-  storeUrl = String(storeUrl).trim();
-  const key = PropertiesService.getScriptProperties().getProperty('BOLT_KEY');
-  const res = UrlFetchApp.fetch(`${BOLT_WORKER}?key=${encodeURIComponent(key)}&url=${encodeURIComponent(storeUrl)}`,
-    { muteHttpExceptions: true });
-  if (res.getResponseCode() !== 200) return 'HTTP ' + res.getResponseCode();
+// Bolt Food: read the public JSON API the food.bolt.eu web app uses (no browser / worker needed).
+// Bolt rate-limits bursts (~10 quick calls), so middayRefresh pauses between stores.
+const BOLT_API = 'https://deliveryuser.live.boltsvc.net/deliveryClient/public/';
+const BOLT_GEO = { lat: 45.6427, lng: 25.5887 };   // Brașov centre: the menu shown depends on the delivery address
+
+function boltGet(endpoint, params) {
+  const props = PropertiesService.getScriptProperties();
+  let dev = props.getProperty('BOLT_DEVICE');
+  if (!dev) { dev = Utilities.getUuid(); props.setProperty('BOLT_DEVICE', dev); }
+  const q = Object.assign({ delivery_lat: BOLT_GEO.lat, delivery_lng: BOLT_GEO.lng, version: 'FW.1.120', language: 'ro-RO',
+    session_id: dev + 'eater1', distinct_id: '$device:' + dev, country: 'ro', device_name: 'web', device_os_version: 'web',
+    deviceId: dev, deviceType: 'web' }, params);
+  const url = BOLT_API + endpoint + '?' + Object.entries(q).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+  const res = UrlFetchApp.fetch(url, { muteHttpExceptions: true,
+    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36',
+               'Accept': 'application/json', 'Origin': 'https://food.bolt.eu', 'Referer': 'https://food.bolt.eu/' } });
+  if (res.getResponseCode() !== 200) throw new Error('HTTP ' + res.getResponseCode());
   const d = JSON.parse(res.getContentText());
-  LAST_META = d.meta || null;
-  if (!d.items || !d.items.length) return 'NO ITEMS';
-  const rows = [['Item', 'Price', 'Original price', 'Stoc']];
-  d.items.forEach(it => rows.push([it.name, it.price, it.orig || '', it.oos ? 'epuizat' : '']));
+  if (d.code !== 0) throw new Error('Bolt ' + d.code + ' ' + d.message);   // 1005 = TOO_MANY_REQUESTS
+  return d.data;
+}
+
+function BOLT_MENU(storeUrl) {
+  const m = String(storeUrl).match(/\/p\/(\d+)/);
+  if (!m) return 'BAD URL – expected .../p/<id>-name/';
+  const providerId = m[1];
+  const menu = boltGet('getMenuCategories', { provider_id: providerId });
+  const items = Object.values(menu.items || {});
+  const cats = {};
+  items.filter(i => i.type === 'category').forEach(c => cats[c.id] = { name: c.name.value, index: c.index });
+  const dishes = items.filter(i => i.type === 'dish' && i.price)
+    .sort((a, b) => ((cats[a.parent_id] || {}).index - (cats[b.parent_id] || {}).index) || (a.index - b.index));
+  // a dish can be listed under several categories (e.g. "Popular"): keep the first occurrence only
+  const rows = [['Item', 'Price', 'Original price', 'Stoc', 'Category']], seen = new Set();
+  dishes.forEach(d => {
+    const name = d.name.value.replace(/\s+/g, ' ').trim();
+    if (seen.has(name)) return;
+    seen.add(name);
+    const p = d.price, orig = p.original_price && p.original_price.value > p.value ? p.original_price.value : '';
+    rows.push([name, p.value, orig, d.availability === 'in_stock' ? '' : 'epuizat', (cats[d.parent_id] || {}).name || '']);
+  });
+  if (rows.length < 2) return 'NO ITEMS';
+
+  LAST_META = null;
+  try {
+    Utilities.sleep(1500);
+    const p = boltGet('getProviderDetails', { provider_id: providerId, city_id: 802 }).provider;
+    const eta = p.min_delivery_eta ? `${Math.round(p.min_delivery_eta / 60)}–${Math.round(p.max_delivery_eta / 60)}` : '';
+    LAST_META = { rating: p.rating_info ? p.rating_info.rating : '', reviews: p.rating_info ? p.rating_info.count : '',
+      fee: p.delivery_price ? p.delivery_price.value : '', minutes: eta };
+  } catch (e) { Logger.log(`${providerId}: meta skipped (${e.message})`); }
   return rows;
 }
 

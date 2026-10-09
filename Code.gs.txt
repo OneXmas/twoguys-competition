@@ -22,7 +22,6 @@ function FB_PRICE(restaurantUid, itemId) {
 // TEST GLOVO =GLOVO_MENU("link")
 // TEST BOLT =BOLT_MENU("link")
 
-const BOLT_WORKER = 'https://bolt-menu.twoguys.workers.dev/';
 
 
 // ===== CONFIG =====
@@ -33,10 +32,10 @@ const COMPETITORS = [
   // own platforms
   { sheet: 'TwoGuys - G',  nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/two-guys-delivery' },
   { sheet: 'TwoGuys - W',  nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU',  url: 'https://wolt.com/ro/rou/brasov/restaurant/two-guys-delivery-67dac8fa3d53c71097395624' },
-  { sheet: 'TwoGuys - B',  nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/110855-two-guys-delivery/', midday: true },
+  { sheet: 'TwoGuys - B',  nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/110855-two-guys-delivery/', midday: true },
   { sheet: 'TheSmash - G', nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/the-smash-by-two-guys-brv' },
   { sheet: 'TheSmash - W', nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU',  url: 'https://wolt.com/en/rou/brasov/restaurant/smash-by-two-guys-67fd02d15c0da5b09cffb191' },
-  { sheet: 'TheSmash - B', nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/138455-the-smash-by-two-guys/', midday: true },
+  { sheet: 'TheSmash - B', nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/138455-the-smash-by-two-guys/', midday: true },
   // competitor sites
   { sheet: 'Buffaloeat',   nameCol: 'A', priceCol: 'B' },                                   // IMPORTXML
   { sheet: 'Egg&Smash',    nameCol: 'A', priceCol: 'B' },                                   // IMPORTXML
@@ -60,11 +59,11 @@ const COMPETITORS = [
   { sheet: 'Old Jack - W',   nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/old-jack-burger-house-67dac60c5416f96b8fd406c0' },
   { sheet: 'Ramore - W',     nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/ramore-fresh-food-braov-6a61e5749d5d06a0265534bb' },
   // competitors – Bolt
-  { sheet: 'Egg&Smash - B',       nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/832880-egg-smash-house/', midday: true },
-  { sheet: 'Marcos - B',          nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/196690-marcos-burger/', midday: true },
-  { sheet: 'Dafud - B',           nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/203900-dafud/', midday: true },
-  { sheet: 'Old Jack - B',        nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/1132692-old-jack-burger-house/', midday: true },
-  { sheet: 'Romanian Burger - B', nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/189882-romanian-burger/', midday: true },
+  { sheet: 'Egg&Smash - B',       nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/832880-egg-smash-house/', midday: true },
+  { sheet: 'Marcos - B',          nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/196690-marcos-burger/', midday: true },
+  { sheet: 'Dafud - B',           nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/203900-dafud/', midday: true },
+  { sheet: 'Old Jack - B',        nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/1132692-old-jack-burger-house/', midday: true },
+  { sheet: 'Romanian Burger - B', nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/189882-romanian-burger/', midday: true },
 ];
 
 const OWN_CHANNELS = ['Mypassage', 'TwoGuys - G', 'TwoGuys - W', 'TwoGuys - B', 'TheSmash - G', 'TheSmash - W', 'TheSmash - B'];
@@ -517,7 +516,7 @@ function middayRefresh() {
       if (Array.isArray(data)) break;
       Utilities.sleep(8000 * attempt);
     }
-    Utilities.sleep(3000);
+    Utilities.sleep(5000);                       // Bolt rate-limits bursts
     const oldCount = Math.max(sh.getLastRow() - 1, 0);
     if (!Array.isArray(data) || data.length < 2 || (oldCount && data.length - 1 < oldCount * 0.5)) {
       Logger.log(`${cfg.sheet}: kept previous data (${String(data).slice(0, 60)}${Array.isArray(data) ? ', ' + (data.length - 1) + ' items' : ''})`);
