@@ -108,5 +108,5 @@ function ownShopsReport() {
   const body = `<div style="background:#f3f4f6;padding:20px 8px;font-family:Arial,sans-serif;"><div style="max-width:720px;margin:0 auto;background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;">
     <div style="height:5px;background:${col.accent};"></div><div style="padding:20px;text-align:center;border-bottom:1px solid #e5e7eb;"><div style="font-size:18px;font-weight:800;">Verificare magazine proprii</div><div style="font-size:13px;color:#6b7280;">${today} · X = lipsă · preț afișat = diferit de lista master</div></div>
     <div style="padding:4px 20px 20px;">${html}</div><div style="height:5px;background:${col.accent};"></div></div></div>`;
-  MailApp.sendEmail({ to: ALERT_EMAIL, subject: `🏪 Magazine proprii: ${total} probleme (${today})`, htmlBody: body });
+  MailApp.sendEmail({ to: CFG().ownEmail, subject: `🏪 Magazine proprii: ${total} probleme (${today})`, htmlBody: body });
 }
