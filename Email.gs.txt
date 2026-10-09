@@ -3,11 +3,10 @@ const EMAIL_CFG = {
   subject: (nComp, nOwn, date) => `🍔 Competiție: ${nComp ? `${nComp} ${plural(nComp)}` : 'fără modificări'}${nOwn ? ` · la noi: ${nOwn}` : ''} (${date})`,
   title: 'Raport competiție',
   footer: 'Raport automat generat zilnic numai dacă există modificări față de ziua precedentă',
-  buttonText: 'Deschide fisier RAPORT',
   ownTitle: 'Canalele noastre',
   collapseAfter: 5,        // more than this many ADDED/REMOVED/RETURNED for one shop → a single summary row
   labels: {
-    PRICE_CHANGED: 'Preț NOU', DISCOUNT: 'PROMO', DISCOUNT_ENDED: 'PROMO ÎNCHEIAT', ADDED: 'ADĂUGAT',
+    PRICE_CHANGED: 'Preț NOU', DISCOUNT: 'PROMO', DISCOUNT_ENDED: 'Promo End', ADDED: 'ADĂUGAT',
     RETURNED: 'REVENIT', REMOVED: 'DELISTAT', RENAMED: 'REDENUMIT', SOURCE_LOST: 'Sursă pierdută',
   },
   order: ['SOURCE_LOST', 'PRICE_CHANGED', 'DISCOUNT', 'DISCOUNT_ENDED', 'ADDED', 'RETURNED', 'REMOVED', 'RENAMED'],
@@ -29,6 +28,8 @@ const EMAIL_CFG = {
 
 const plural = n => n === 1 ? 'modificare' : 'modificări';
 const isOwnTab = tab => OWN_CHANNELS.includes(tab) || tab === 'Burgerbrasov';
+const PLATFORM_NAMES = { G: 'Glovo', W: 'Wolt', B: 'Bolt' };
+const displayName = tab => String(tab).replace(/ - ([GWB])$/, (_, p) => ` - ${PLATFORM_NAMES[p]}`);   // "Dafud - G" → "Dafud - Glovo"
 
 
 function sendAlert(today, changes, logRows) {
@@ -53,7 +54,7 @@ function sendAlert(today, changes, logRows) {
       } else out.push(...same);
     }
     let html = `
-    <div style="font-size:15px;font-weight:700;color:#111827;margin:18px 0 6px;text-align:left;">${esc(comp)}
+    <div style="font-size:15px;font-weight:700;color:#111827;margin:18px 0 6px;text-align:left;">${esc(displayName(comp))}
       <span style="font-weight:400;color:#6b7280;font-size:13px;">— ${rows.length} ${plural(rows.length)}</span></div>
     <table width="100%" cellpadding="6" cellspacing="0" border="0" style="border:1px solid #e5e7eb;border-radius:8px;font-size:13px;">
       <tr style="background:${col.headerBg};color:#fff;">
@@ -62,7 +63,7 @@ function sendAlert(today, changes, logRows) {
     out.forEach((r, i) => {
       const type = r[2], d = r[6];
       const badgeColor = ['PRICE_CHANGED', 'RETURNED'].includes(type) && d !== '' ? (d > 0 ? col.up : col.down) : (col[type] || '#6b7280');
-      const diffTxt = d === '' || d == null ? '' : `${d > 0 ? '▲' : '▼'} ${fmt(Math.abs(d))} (${(Math.abs(r[7]) * 100).toFixed(1)}%)`;
+      const diffTxt = d === '' || d == null || type === 'DISCOUNT' ? '' : `${d > 0 ? '▲' : '▼'} ${fmt(Math.abs(d))} (${(Math.abs(r[7]) * 100).toFixed(1)}%)`;   // promo: the -% is already in the item name
       html += `
       <tr style="background:${i % 2 ? col.rowAlt : '#fff'};">
         <td>${badge(type, badgeColor)}</td>
@@ -96,10 +97,8 @@ function sendAlert(today, changes, logRows) {
   const failed = logRows.filter(r => String(r[3]).startsWith('FETCH'));
   const warn = failed.length
     ? `<div style="margin-top:16px;padding:10px;background:#fef3c7;border-left:4px solid #f59e0b;font-size:13px;text-align:left;">
-        ⚠️ Neverificat azi (eroare la citire): <b>${esc(failed.map(r => r[1]).join(', '))}</b></div>` : '';
+        ⚠️ Neverificat azi (eroare la citire): <b>${esc(failed.map(r => displayName(r[1])).join(', '))}</b></div>` : '';
 
-  const ss = SpreadsheetApp.getActive(), rep = ss.getSheetByName(REPORT_SHEET);
-  const button = `<a href="${ss.getUrl()}#gid=${rep.getSheetId()}" style="display:inline-block;margin-top:18px;padding:10px 18px;background:${col.accent};color:#fff;text-decoration:none;border-radius:8px;font-weight:700;font-size:13px;">${C.buttonText}</a>`;
 
   const html = `
   <div style="background:#f3f4f6;padding:20px 8px;font-family:Arial,sans-serif;">
@@ -110,7 +109,6 @@ function sendAlert(today, changes, logRows) {
       <div style="font-size:13px;color:#6b7280;">${today}</div>
       ${body}
       ${warn}
-      ${button}
       <div style="font-size:11px;color:#9ca3af;margin-top:16px;text-align:center;">${C.footer}</div>
     </div>
     <div style="height:5px;background:${col.accent};"></div>
