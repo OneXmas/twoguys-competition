@@ -337,13 +337,15 @@ function renameCompetitorTabs() {
   const RENAMES = { 'Macros - G': 'Marcos - G', 'Macros - B': 'Marcos - B' };
   const ss = SpreadsheetApp.getActive();
   for (const [from, to] of Object.entries(RENAMES)) { const sh = ss.getSheetByName(from); if (sh && !ss.getSheetByName(to)) sh.setName(to); }
-  // column A of CompMap/MatchMatrix/Channels holds products; competitor names are in row 1 there, and in column A/B of the log-type tabs
-  for (const sh of ss.getSheets()) {
-    if (sh.getLastRow() < 1 || sh.getLastColumn() < 1) continue;
-    const rng = sh.getRange(1, 1, sh.getLastRow(), sh.getLastColumn()), vals = rng.getValues();
+  // plain-value tabs: replace everywhere; map tabs hold formulas, so only their header row is touched
+  const targets = [[SNAP_SHEET, 0], [REPORT_SHEET, 0], [HISTORY_SHEET, 0], [LOG_SHEET, 0], [REMOVED_SHEET, 0], ['Meta', 0], [COMPMAP_SHEET, 1], [MATRIX_SHEET, 1]];
+  for (const [name, headerOnly] of targets) {
+    const sh = ss.getSheetByName(name);
+    if (!sh || sh.getLastRow() < 1 || sh.getLastColumn() < 1) continue;
+    const rng = sh.getRange(1, 1, headerOnly ? 1 : sh.getLastRow(), sh.getLastColumn()), vals = rng.getValues();
     let hit = 0;
     vals.forEach(row => row.forEach((v, i) => { if (RENAMES[v]) { row[i] = RENAMES[v]; hit++; } }));
-    if (hit) { rng.setValues(vals); Logger.log(); }
+    if (hit) { rng.setValues(vals); Logger.log(name + ': ' + hit + ' cells renamed'); }
   }
 }
 
