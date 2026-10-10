@@ -31,5 +31,5 @@ Delivery prices are intentionally higher than home/pick-up prices (platform comm
 ## Notifications
 
 - Daily email at 13:00 stays (already triggered: `ownShopsReport`).
-- Instant alerts wanted: Telegram bot recommended (free, ~20 lines in Apps Script); WhatsApp requires the Business API via a provider (Meta Cloud API / Twilio), approval of a message template, and per-message cost. Decide channel in the next session.
+- Telegram set up 2026-10-10: bot TwoGuyss_bot, group "TwoGuys Alerte", token in Script properties (TELEGRAM_TOKEN), chat id in Settings. Own-shops issues go to Telegram at 13:00; daily competitor summary optional (Settings → telegram_daily). WhatsApp rejected: needs Business API, templates, per-message cost.
 - Possible hourly own-shops check during opening hours (7 small fetches; Bolt rate limit OK).
