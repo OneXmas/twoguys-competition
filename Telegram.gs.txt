@@ -1,0 +1,40 @@
+// ===== TELEGRAM ALERTS =====
+// Setup: 1) in Telegram, message @BotFather → /newbot → copy the token
+//        2) Apps Script → Project Settings → Script properties → add TELEGRAM_TOKEN = <token>
+//        3) create a group, add the bot, send any message in the group
+//        4) run telegramSetup() → it prints the chat id; paste it into Settings → telegram_chat_id
+//        5) run telegramTest() → a test message should arrive in the group
+
+function tgToken() { return PropertiesService.getScriptProperties().getProperty('TELEGRAM_TOKEN'); }
+
+// Send one message (HTML formatting: <b>, <i>, <code>). Silently does nothing if Telegram isn't configured.
+function tgSend(text) {
+  const token = tgToken(), chat = CFG().telegramChatId;
+  if (!token || !chat) return false;
+  const MAX = 3900;                                              // Telegram limit is 4096 chars
+  if (text.length > MAX) text = text.slice(0, MAX) + '\n…';
+  const res = UrlFetchApp.fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    payload: JSON.stringify({ chat_id: chat, text, parse_mode: 'HTML', disable_web_page_preview: true }),
+  });
+  if (res.getResponseCode() !== 200) Logger.log('Telegram: ' + res.getContentText().slice(0, 200));
+  return res.getResponseCode() === 200;
+}
+
+const tgEsc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// One-time: find the chat id of the group the bot was added to.
+function telegramSetup() {
+  const token = tgToken();
+  if (!token) throw new Error('Set TELEGRAM_TOKEN in Project Settings → Script properties first');
+  const d = JSON.parse(UrlFetchApp.fetch(`https://api.telegram.org/bot${token}/getUpdates`, { muteHttpExceptions: true }).getContentText());
+  const chats = {};
+  (d.result || []).forEach(u => { const c = (u.message || u.my_chat_member || {}).chat; if (c) chats[c.id] = c.title || c.username || c.first_name; });
+  if (!Object.keys(chats).length) { Logger.log('No chats yet – add the bot to the group and send a message there, then run again'); return; }
+  Object.entries(chats).forEach(([id, name]) => Logger.log(`chat id ${id} = ${name}   → put this in Settings → telegram_chat_id`));
+}
+
+function telegramTest() {
+  const ok = tgSend('✅ Test: alertele TwoGuys funcționează');
+  Logger.log(ok ? 'Sent' : 'Not sent – check TELEGRAM_TOKEN and Settings → telegram_chat_id');
+}

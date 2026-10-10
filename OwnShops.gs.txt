@@ -59,6 +59,7 @@ function ownShopsReport() {
   const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const col = EMAIL_CFG.colors;
   let html = '', total = 0;
+  const tg = [];                                    // plain-text lines for Telegram
 
   for (const r of OWN_REPORTS) {
     const map = ss.getSheetByName(r.map); if (!map || map.getLastRow() < 2) continue;
@@ -69,34 +70,37 @@ function ownShopsReport() {
     const prices = tabs.map(listPrices);
     const mappedPerTab = tabs.map(() => new Set());
     const issues = [];
+    const tgStart = tg.length;
 
     for (const row of rows) {
       const name = String(row[0]).trim(), refP = Number(row[1]);
       if (!name || !(refP > 0)) continue;
-      const cells = []; let bad = false;
+      const cells = [], notes = []; let bad = false;
       tabs.forEach((tab, i) => {
         const mapped = String(row[tabIdx[i]] || '').trim();
         if (mapped === '-') { cells.push('<td align="center" style="color:#9ca3af;">n/a</td>'); return; }
         if (mapped) mappedPerTab[i].add(mapped);
         const p = mapped ? prices[i][mapped] : undefined;
-        if (p == null) { cells.push(`<td align="center" style="color:${col.up};font-weight:700;">X</td>`); bad = true; return; }
+        if (p == null) { cells.push(`<td align="center" style="color:${col.up};font-weight:700;">X</td>`); notes.push(`${displayName(tab).replace(/.* - /, '')}: lipsă`); bad = true; return; }
         const tag = (p.disc ? ` <span style="color:${col.ADDED};font-size:11px;">−${p.disc}%</span>` : '')
                   + (p.oos ? ` <span style="color:${col.REMOVED};font-size:11px;">epuizat</span>` : '');
         let d = p.list - refP;
         const sgr = SGR_TABS.includes(tab) && Math.abs(d + SGR) <= PRICE_TOLERANCE;
         if (sgr) d = 0;
-        if (Math.abs(d) > PRICE_TOLERANCE) { cells.push(`<td align="right" style="color:${d > 0 ? col.up : col.down};font-weight:700;">${p.list.toFixed(2)} (${d > 0 ? '+' : ''}${d.toFixed(2)})${tag}</td>`); bad = true; }
+        if (Math.abs(d) > PRICE_TOLERANCE) { cells.push(`<td align="right" style="color:${d > 0 ? col.up : col.down};font-weight:700;">${p.list.toFixed(2)} (${d > 0 ? '+' : ''}${d.toFixed(2)})${tag}</td>`); notes.push(`${displayName(tab).replace(/.* - /, '')}: ${p.list.toFixed(2)} (${d > 0 ? '+' : ''}${d.toFixed(2)})`); bad = true; }
         else cells.push(`<td align="center" style="color:#9ca3af;">✓${sgr ? ' <span style="font-size:11px;">SGR</span>' : ''}${tag}</td>`);
       });
+      if (bad) tg.push(`• ${tgEsc(name)} [${refP.toFixed(2)}] — ${tgEsc(notes.join(', '))}`);
       if (bad) issues.push(`<tr><td>${esc(name)}</td><td align="right">${refP.toFixed(2)}</td>${cells.join('')}</tr>`);
     }
 
     // items on a platform that no master row points at → candidates to delete
     const extras = [];
     tabs.forEach((tab, i) => Object.keys(prices[i]).filter(n => !mappedPerTab[i].has(n))
-      .forEach(n => extras.push(`<tr><td>${esc(tab)}</td><td>${esc(n)}</td><td align="right">${prices[i][n].list.toFixed(2)}</td></tr>`)));
+      .forEach(n => { extras.push(`<tr><td>${esc(tab)}</td><td>${esc(n)}</td><td align="right">${prices[i][n].list.toFixed(2)}</td></tr>`); tg.push(`• ${tgEsc(n)} (${prices[i][n].list.toFixed(2)}) e pe ${displayName(tab).replace(/.* - /, '')} dar nu în lista master`); }));
 
     total += issues.length + extras.length;
+    if (tg.length > tgStart) tg.splice(tgStart, 0, `\n<b>${tgEsc(r.name)}</b>`);   // shop header only when it has issues
     html += `<div style="font-size:15px;font-weight:700;margin:18px 0 6px;">${esc(r.name)} <span style="font-weight:400;color:#6b7280;font-size:13px;">— ${issues.length} probleme, ${extras.length} produse în plus</span></div>`;
     html += issues.length ? `<table width="100%" cellpadding="6" cellspacing="0" style="border:1px solid #e5e7eb;font-size:13px;">
       <tr style="background:${col.headerBg};color:#fff;"><th align="left">Produs</th><th align="right">Preț ref.</th>${tabs.map(h => `<th>${esc(h)}</th>`).join('')}</tr>${issues.join('')}</table>` : '';
@@ -105,6 +109,7 @@ function ownShopsReport() {
     if (!issues.length && !extras.length) html += `<p style="font-size:13px;color:${col.ADDED};">✓ Totul în ordine</p>`;
   }
   if (!total) return;
+  if (CFG().telegramOwn) tgSend(`🏪 <b>Magazine proprii: ${total} probleme</b> (${today})\n` + tg.join('\n'));
   const body = `<div style="background:#f3f4f6;padding:20px 8px;font-family:Arial,sans-serif;"><div style="max-width:720px;margin:0 auto;background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;">
     <div style="height:5px;background:${col.accent};"></div><div style="padding:20px;text-align:center;border-bottom:1px solid #e5e7eb;"><div style="font-size:18px;font-weight:800;">Verificare magazine proprii</div><div style="font-size:13px;color:#6b7280;">${today} · X = lipsă · preț afișat = diferit de lista master</div></div>
     <div style="padding:4px 20px 20px;">${html}</div><div style="height:5px;background:${col.accent};"></div></div></div>`;

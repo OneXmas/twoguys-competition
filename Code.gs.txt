@@ -155,6 +155,9 @@ const SETTINGS_DEFAULTS = [
   ['muted_tabs',           '',          'Taburi urmărite în foaie dar lăsate afară din emailul zilnic (nume exacte, ex. Ramore - W, Dafud - B)'],
   ['priority_tabs',        '',          'Taburi afișate primele în email (nume exacte, separate prin virgulă)'],
   ['mass_rename_min',      10,          'Atâtea redenumiri deodată (și ≥50% din meniu) = schimbare de format → o singură linie'],
+  ['telegram_chat_id',     '',          'ID-ul grupului Telegram (rulează telegramSetup ca să-l afli). Gol = fără Telegram'],
+  ['telegram_own',         'da',        'Trimite pe Telegram problemele din magazinele proprii (da/nu)'],
+  ['telegram_daily',       'nu',        'Trimite pe Telegram rezumatul zilnic al concurenței (da/nu)'],
 ];
 
 let _cfg = null;
@@ -181,6 +184,9 @@ function CFG() {
     mutedTabs: list(raw.muted_tabs),
     priorityTabs: list(raw.priority_tabs),
     massRename: { min: num(raw.mass_rename_min, 10), share: 0.5 },
+    telegramChatId: String(raw.telegram_chat_id || '').trim(),
+    telegramOwn: /^(da|yes|1|true)$/i.test(String(raw.telegram_own)),
+    telegramDaily: /^(da|yes|1|true)$/i.test(String(raw.telegram_daily)),
   };
   return _cfg;
 }

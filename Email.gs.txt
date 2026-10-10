@@ -116,6 +116,16 @@ function sendAlert(today, changes, logRows) {
     <div style="height:5px;background:${col.accent};"></div>
   </div></div>`;
 
+  if (F.telegramDaily && comps.length) {
+    const lines = [`🍔 <b>Competiție: ${nComp} ${plural(nComp)}</b> (${today})`];
+    comps.forEach(c => {
+      const rows = byComp[c].sort((a, b) => rank(a[2]) - rank(b[2]));
+      lines.push(`\n<b>${tgEsc(displayName(c))}</b>`);
+      rows.slice(0, 6).forEach(r => lines.push(`• ${C.labels[r[2]] || r[2]}: ${tgEsc(r[3])}${r[4] !== '' && r[5] !== '' ? ` ${fmt(r[4])} → ${fmt(r[5])}` : r[5] !== '' ? ` ${fmt(r[5])}` : ''}`));
+      if (rows.length > 6) lines.push(`  … +${rows.length - 6}`);
+    });
+    tgSend(lines.join('\n'));
+  }
   MailApp.sendEmail({ to: F.alertEmail, subject: changes.length ? C.subject(nComp, nOwn, today) : `⚠️ Sursă fără date (${today})`, htmlBody: html });
 }
 
