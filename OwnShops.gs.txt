@@ -48,16 +48,17 @@ function buildRefSheets() {
 
 function ownShopsReport() {
   const ss = SpreadsheetApp.getActive(), today = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
-  const listPrices = tab => {                       // name -> list price (discount ignored)
+  const listPrices = tab => {                       // name -> { list price (discount ignored), disc, oos, cat, pos }
     const cfg = COMPETITORS.find(c => c.sheet === tab), sh = ss.getSheetByName(tab), m = {};
     if (!cfg || !sh || sh.getLastRow() < 2) return m;
     const last = sh.getLastRow(), col = c => c ? sh.getRange(`${c}2:${c}${last}`).getValues().flat() : [];
-    const n = col(cfg.nameCol), p = col(cfg.priceCol), o = col(cfg.origCol), st = col(cfg.stockCol);
-    n.forEach((x, i) => { const s = Number(p[i]), org = Number(o[i]); if (x && s > 0) m[String(x).trim()] = { list: org > s ? org : s, disc: org > s ? Math.round((1 - s / org) * 100) : 0, oos: /epuizat/i.test(st[i] || '') }; });
+    const n = col(cfg.nameCol), p = col(cfg.priceCol), o = col(cfg.origCol), st = col(cfg.stockCol), ct = col(cfg.catCol);
+    n.forEach((x, i) => { const s = Number(p[i]), org = Number(o[i]); if (x && s > 0) m[String(x).trim()] = { list: org > s ? org : s, disc: org > s ? Math.round((1 - s / org) * 100) : 0, oos: /epuizat/i.test(st[i] || ''), cat: String(ct[i] || '').trim(), pos: i }; });
     return m;
   };
   const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const col = EMAIL_CFG.colors;
+  const platform = tab => displayName(tab).replace(/.* - /, '');
   let html = '', total = 0;
   const tg = [];                                    // plain-text lines for Telegram
 
@@ -69,8 +70,12 @@ function ownShopsReport() {
     const rows = map.getRange(2, 1, map.getLastRow() - 1, headers.length).getValues();
     const prices = tabs.map(listPrices);
     const mappedPerTab = tabs.map(() => new Set());
-    const issues = [];
-    const tgStart = tg.length;
+    const issues = [], extras = [];                 // { cat, pos, name, html, tg }
+    // category of a master row = category on the first platform where it is mapped; fallback: "CAT | Name" prefix in the master name
+    const catOf = (row, name) => {
+      for (let i = 0; i < tabs.length; i++) { const p = prices[i][String(row[tabIdx[i]] || '').trim()]; if (p && p.cat) return { cat: p.cat, pos: p.pos }; }
+      const m = name.match(/^([^|]+)\|/); return { cat: m ? m[1].trim() : 'Altele', pos: 9999 };
+    };
 
     for (const row of rows) {
       const name = String(row[0]).trim(), refP = Number(row[1]);
@@ -81,31 +86,45 @@ function ownShopsReport() {
         if (mapped === '-') { cells.push('<td align="center" style="color:#9ca3af;">n/a</td>'); return; }
         if (mapped) mappedPerTab[i].add(mapped);
         const p = mapped ? prices[i][mapped] : undefined;
-        if (p == null) { cells.push(`<td align="center" style="color:${col.up};font-weight:700;">X</td>`); notes.push(`${displayName(tab).replace(/.* - /, '')}: lipsă`); bad = true; return; }
+        if (p == null) { cells.push(`<td align="center" style="color:${col.up};font-weight:700;">X</td>`); notes.push(`${platform(tab)}: lipsă`); bad = true; return; }
         const tag = (p.disc ? ` <span style="color:${col.ADDED};font-size:11px;">−${p.disc}%</span>` : '')
                   + (p.oos ? ` <span style="color:${col.REMOVED};font-size:11px;">epuizat</span>` : '');
         let d = p.list - refP;
         const sgr = SGR_TABS.includes(tab) && Math.abs(d + SGR) <= PRICE_TOLERANCE;
         if (sgr) d = 0;
-        if (Math.abs(d) > PRICE_TOLERANCE) { cells.push(`<td align="right" style="color:${d > 0 ? col.up : col.down};font-weight:700;">${p.list.toFixed(2)} (${d > 0 ? '+' : ''}${d.toFixed(2)})${tag}</td>`); notes.push(`${displayName(tab).replace(/.* - /, '')}: ${p.list.toFixed(2)} (${d > 0 ? '+' : ''}${d.toFixed(2)})`); bad = true; }
+        if (Math.abs(d) > PRICE_TOLERANCE) { cells.push(`<td align="right" style="color:${d > 0 ? col.up : col.down};font-weight:700;">${p.list.toFixed(2)} (${d > 0 ? '+' : ''}${d.toFixed(2)})${tag}</td>`); notes.push(`${platform(tab)}: ${p.list.toFixed(2)} (${d > 0 ? '+' : ''}${d.toFixed(2)})`); bad = true; }
         else cells.push(`<td align="center" style="color:#9ca3af;">✓${sgr ? ' <span style="font-size:11px;">SGR</span>' : ''}${tag}</td>`);
       });
-      if (bad) tg.push(`• ${tgEsc(name)} [${refP.toFixed(2)}] — ${tgEsc(notes.join(', '))}`);
-      if (bad) issues.push(`<tr><td>${esc(name)}</td><td align="right">${refP.toFixed(2)}</td>${cells.join('')}</tr>`);
+      if (bad) issues.push({ ...catOf(row, name), name, html: `<tr><td>${esc(name)}</td><td align="right">${refP.toFixed(2)}</td>${cells.join('')}</tr>`,
+        tg: `• ${tgEsc(name)} [${refP.toFixed(2)}] — ${tgEsc(notes.join(', '))}` });
     }
 
-    // items on a platform that no master row points at → candidates to delete
-    const extras = [];
-    tabs.forEach((tab, i) => Object.keys(prices[i]).filter(n => !mappedPerTab[i].has(n))
-      .forEach(n => { extras.push(`<tr><td>${esc(tab)}</td><td>${esc(n)}</td><td align="right">${prices[i][n].list.toFixed(2)}</td></tr>`); tg.push(`• ${tgEsc(n)} (${prices[i][n].list.toFixed(2)}) e pe ${displayName(tab).replace(/.* - /, '')} dar nu în lista master`); }));
+    // items on a platform that no master row points at → add them to the master tab, or delete them from the platform
+    tabs.forEach((tab, i) => Object.keys(prices[i]).filter(n => !mappedPerTab[i].has(n)).forEach(n => {
+      const p = prices[i][n];
+      extras.push({ cat: p.cat || 'Altele', pos: p.pos, name: n, tab,
+        html: `<tr><td>${esc(platform(tab))}</td><td>${esc(n)}</td><td align="right">${p.list.toFixed(2)}</td></tr>`,
+        tg: `• ${tgEsc(n)} (${p.list.toFixed(2)}) e pe ${platform(tab)} dar nu în „${tgEsc(r.map)}”` });
+    }));
+
+    // group by category, in platform menu order; rows inside a category alphabetically
+    const catOrder = {};
+    [...issues, ...extras].forEach(x => catOrder[x.cat] = Math.min(catOrder[x.cat] == null ? Infinity : catOrder[x.cat], x.pos));
+    const byCat = (a, b) => (catOrder[a.cat] - catOrder[b.cat]) || a.cat.localeCompare(b.cat) || a.name.localeCompare(b.name);
+    issues.sort(byCat); extras.sort((a, b) => byCat(a, b) || a.tab.localeCompare(b.tab));
+    const withHeaders = (list, span, fn) => { let last = null, out = ''; list.forEach(x => {
+      if (x.cat !== last) { out += `<tr><td colspan="${span}" style="background:#f3f4f6;font-weight:700;color:#374151;">${esc(x.cat)}</td></tr>`; last = x.cat; }
+      out += fn(x); }); return out; };
+    const tgWithHeaders = list => { let last = null; const out = []; list.forEach(x => { if (x.cat !== last) { out.push(`<i>${tgEsc(x.cat)}</i>`); last = x.cat; } out.push(x.tg); }); return out; };
 
     total += issues.length + extras.length;
-    if (tg.length > tgStart) tg.splice(tgStart, 0, `\n<b>${tgEsc(r.name)}</b>`);   // shop header only when it has issues
+    if (issues.length || extras.length) tg.push(`\n<b>${tgEsc(r.name)}</b>`, ...tgWithHeaders(issues));
+    if (extras.length) tg.push(`<i>Pe platformă dar nu în „${tgEsc(r.map)}”:</i>`, ...extras.map(x => x.tg));
     html += `<div style="font-size:15px;font-weight:700;margin:18px 0 6px;">${esc(r.name)} <span style="font-weight:400;color:#6b7280;font-size:13px;">— ${issues.length} probleme, ${extras.length} produse în plus</span></div>`;
     html += issues.length ? `<table width="100%" cellpadding="6" cellspacing="0" style="border:1px solid #e5e7eb;font-size:13px;">
-      <tr style="background:${col.headerBg};color:#fff;"><th align="left">Produs</th><th align="right">Preț ref.</th>${tabs.map(h => `<th>${esc(h)}</th>`).join('')}</tr>${issues.join('')}</table>` : '';
-    html += extras.length ? `<div style="font-size:13px;font-weight:700;margin:10px 0 4px;color:#6b7280;">Pe platformă dar nu în lista master:</div>
-      <table width="100%" cellpadding="6" cellspacing="0" style="border:1px solid #e5e7eb;font-size:13px;"><tr style="background:${col.headerBg};color:#fff;"><th align="left">Platformă</th><th align="left">Produs</th><th align="right">Preț</th></tr>${extras.join('')}</table>` : '';
+      <tr style="background:${col.headerBg};color:#fff;"><th align="left">Produs</th><th align="right">Preț ref.</th>${tabs.map(h => `<th>${esc(platform(h))}</th>`).join('')}</tr>${withHeaders(issues, tabs.length + 2, x => x.html)}</table>` : '';
+    html += extras.length ? `<div style="font-size:13px;font-weight:700;margin:10px 0 4px;color:#6b7280;">Pe platformă dar nu în lista master — de verificat tabul „${esc(r.map)}” din fișier:</div>
+      <table width="100%" cellpadding="6" cellspacing="0" style="border:1px solid #e5e7eb;font-size:13px;"><tr style="background:${col.headerBg};color:#fff;"><th align="left">Platformă</th><th align="left">Produs</th><th align="right">Preț</th></tr>${withHeaders(extras, 3, x => x.html)}</table>` : '';
     if (!issues.length && !extras.length) html += `<p style="font-size:13px;color:${col.ADDED};">✓ Totul în ordine</p>`;
   }
   if (!total) return;
