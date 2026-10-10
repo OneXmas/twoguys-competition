@@ -33,3 +33,9 @@ Delivery prices are intentionally higher than home/pick-up prices (platform comm
 - Daily email at 13:00 stays (already triggered: `ownShopsReport`).
 - Telegram set up 2026-10-10: bot TwoGuyss_bot, group "TwoGuys Alerte", token in Script properties (TELEGRAM_TOKEN), chat id in Settings. Own-shops issues go to Telegram at 13:00; daily competitor summary optional (Settings → telegram_daily). WhatsApp rejected: needs Business API, templates, per-message cost.
 - Possible hourly own-shops check during opening hours (7 small fetches; Bolt rate limit OK).
+
+## State on 2026-10-10 (from fresh export)
+
+- Master tabs are stale: Wolt names still in old "CATEGORY | Name" format, Glovo/Bolt drink names changed, ~22 Bolt items never seen. Simulated own-shops report = 499 false problems (TwoGuys Delivery 82+118, TwoGuys Home 54+113, Smash Delivery 50+82). No Bolt +0.50 SGR issues.
+- telegram_own set to nu until the master tabs are rebuilt — first task of the build session.
+- Open: colleagues' answer on Burgerbrasov vs Mypassage; whether master tabs were hand-edited (rebuild vs preserve).
