@@ -46,6 +46,52 @@ function buildRefSheets() {
   }
 }
 
+// Products of one platform tab, in menu order: [{ name, list }] (list price = original price when discounted)
+function platformItems(ss, tab) {
+  const cfg = COMPETITORS.find(c => c.sheet === tab), sh = ss.getSheetByName(tab), out = [];
+  if (!cfg || !sh || sh.getLastRow() < 2) return out;
+  const last = sh.getLastRow(), col = c => c ? sh.getRange(`${c}2:${c}${last}`).getValues().flat() : [];
+  const n = col(cfg.nameCol), p = col(cfg.priceCol), o = col(cfg.origCol);
+  const seen = new Set();
+  n.forEach((x, i) => { const s = Number(p[i]), org = Number(o[i]), name = String(x || '').trim(); if (name && s > 0 && !seen.has(name)) { seen.add(name); out.push({ name, list: org > s ? org : s }); } });
+  return out;
+}
+
+// One-time: rebuild the delivery master tabs (TwoGuys Delivery, Smash Delivery) from the platforms.
+// Column A/B = Glovo name and list price; products that exist only on Wolt/Bolt are appended with their own name/price,
+// so they show up as missing on the other platforms. Platform columns are auto-matched like buildRefSheets.
+// REPLACES the current content of those tabs.
+function rebuildDeliveryMasters() {
+  const ss = SpreadsheetApp.getActive();
+  const targets = OWN_REPORTS.filter(r => r.tabs.some(t => / - G$/.test(t)));
+  for (const r of targets) {
+    const sh = ss.getSheetByName(r.map) || ss.insertSheet(r.map);
+    const gTab = r.tabs.find(t => / - G$/.test(t));
+    const rows = platformItems(ss, gTab).map(it => [it.name, it.list, ...r.tabs.map(t => t === gTab ? it.name : '')]);
+    sh.clearContents();
+    sh.getRange(1, 1, 1, 2 + r.tabs.length).setValues([['Produs', 'Preț', ...r.tabs]]).setFontWeight('bold');
+    if (rows.length) sh.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
+    sh.setFrozenRows(1); sh.setFrozenColumns(2);
+  }
+  buildRefSheets();                                           // fuzzy-match Wolt/Bolt names onto the Glovo rows
+  for (const r of targets) {                                  // products only on Wolt/Bolt → own rows
+    const sh = ss.getSheetByName(r.map);
+    const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+    const data = sh.getLastRow() > 1 ? sh.getRange(2, 1, sh.getLastRow() - 1, headers.length).getValues() : [];
+    const extra = [];
+    r.tabs.forEach(tab => {
+      const c = headers.indexOf(tab); if (c < 0) return;
+      const used = new Set(data.map(row => String(row[c]).trim()).concat(extra.map(row => String(row[c]).trim())));
+      platformItems(ss, tab).filter(it => !used.has(it.name)).forEach(it => {
+        const row = [it.name, it.list, ...r.tabs.map(() => '')]; row[c] = it.name; extra.push(row);
+      });
+    });
+    if (extra.length) sh.getRange(sh.getLastRow() + 1, 1, extra.length, headers.length).setValues(extra);
+    Logger.log(`${r.map}: ${data.length} products from ${r.tabs.find(t => / - G$/.test(t))}, +${extra.length} only on other platforms`);
+  }
+  buildRefSheets();                                           // match the appended rows on the remaining platform
+}
+
 function ownShopsReport() {
   const ss = SpreadsheetApp.getActive(), today = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
   const listPrices = tab => {                       // name -> { list price (discount ignored), disc, oos, cat, pos }
