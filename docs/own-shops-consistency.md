@@ -39,3 +39,9 @@ Delivery prices are intentionally higher than home/pick-up prices (platform comm
 - Master tabs are stale: Wolt names still in old "CATEGORY | Name" format, Glovo/Bolt drink names changed, ~22 Bolt items never seen. Simulated own-shops report = 499 false problems (TwoGuys Delivery 82+118, TwoGuys Home 54+113, Smash Delivery 50+82). No Bolt +0.50 SGR issues.
 - telegram_own set to nu until the master tabs are rebuilt — first task of the build session.
 - Open: colleagues' answer on Burgerbrasov vs Mypassage; whether master tabs were hand-edited (rebuild vs preserve).
+
+## 2026-10-11
+
+- Master tabs rebuilt: rebuildDeliveryMasters (Glovo names/list prices + Wolt/Bolt-only rows) and rebuildHomeMaster (Burgerbrasov + fuzzy/AI-matched Mypassage, "-" = not sold for pick-up). AI matched all but 2 Home rows (user fixed). Report grouped by category; ≈ = unreviewed AI match.
+- Decisions: master = Glovo list price, Wolt/Bolt being aligned to it by the user; Bolt-only items should be on all platforms; Mypassage is a subset of Burgerbrasov.
+- Still open: out-of-stock-on-one-platform check, near-name typo check, Wolt/Glovo meta (rating/fee), hourly check, telegram_own back to da when noise is acceptable.
