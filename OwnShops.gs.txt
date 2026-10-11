@@ -92,6 +92,86 @@ function rebuildDeliveryMasters() {
   buildRefSheets();                                           // match the appended rows on the remaining platform
 }
 
+// One-time: rebuild "TwoGuys Home" from the restaurant site. Column A/B = Burgerbrasov name and price; the Mypassage column is
+// filled by fuzzy match, then by the AI matcher (marked ≈ until you review), and set to "-" where nothing matches
+// (not every restaurant product is sold for pick-up). Mypassage-only products are appended as extra rows.
+function rebuildHomeMaster() {
+  const ss = SpreadsheetApp.getActive();
+  const r = OWN_REPORTS.find(x => x.map === 'TwoGuys Home');
+  const base = r.tabs[0], other = r.tabs.slice(1);
+  const sh = ss.getSheetByName(r.map) || ss.insertSheet(r.map);
+  const rows = platformItems(ss, base).map(it => [it.name, it.list, it.name, ...other.map(() => '')]);
+  sh.clearContents();
+  sh.getRange(1, 1, 1, 2 + r.tabs.length).setValues([['Produs', 'Preț', ...r.tabs]]).setFontWeight('bold');
+  if (rows.length) sh.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
+  sh.setFrozenRows(1); sh.setFrozenColumns(2);
+  buildRefSheets();                                 // fuzzy pass
+  llmFillRef(r.map);                                // AI pass for what is left, marked ≈
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+  const rng = sh.getRange(2, 1, sh.getLastRow() - 1, headers.length), data = rng.getValues();
+  const extra = [];
+  other.forEach(tab => {
+    const c = headers.indexOf(tab);
+    const used = new Set(data.map(row => String(row[c]).replace(/^[~≈]/, '').trim()));
+    platformItems(ss, tab).filter(it => !used.has(it.name)).forEach(it => { const row = [it.name, it.list, ...r.tabs.map(() => '')]; row[c] = it.name; extra.push(row); });
+    data.forEach(row => { if (!String(row[c]).trim()) row[c] = '-'; });   // restaurant-only product: not expected on Mypassage
+  });
+  rng.setValues(data);
+  if (extra.length) sh.getRange(sh.getLastRow() + 1, 1, extra.length, headers.length).setValues(extra);
+  Logger.log(`${r.map}: ${data.length} products from ${base}, +${extra.length} only on ${other.join('/')}`);
+}
+
+// AI matcher for a master tab: fills blank platform cells with the equivalent product name, prefixed ≈ (review, then remove the ≈).
+function llmFillRef(mapName) {
+  const ss = SpreadsheetApp.getActive();
+  const key = PropertiesService.getScriptProperties().getProperty('ANTHROPIC_KEY');
+  if (!key) { Logger.log('ANTHROPIC_KEY not set – AI pass skipped'); return; }
+  const sh = ss.getSheetByName(mapName);
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+  const rng = sh.getRange(2, 1, sh.getLastRow() - 1, headers.length), rows = rng.getValues().map(r => r.map(String));
+  headers.forEach((tab, c) => {
+    if (c < 2 || !COMPETITORS.some(x => x.sheet === tab)) return;
+    const blanks = rows.filter(r => r[0] && !r[c].trim());
+    if (!blanks.length) return;
+    const taken = new Set(rows.map(r => r[c].replace(/^[~≈]/, '').trim()).filter(Boolean));
+    const candidates = platformItems(ss, tab).filter(it => !taken.has(it.name));
+    if (!candidates.length) return;
+    const prompt = `Two sales channels of the SAME restaurant list the same dishes under different spellings or formats
+(capitalisation, diacritics, "Meniu X" vs "X – Meniu", weight suffixes, "Extra: bacon" vs "Extra bacon", Romanian vs English).
+Match each product from list A to the SAME product in list B. Only match when it is clearly the same dish and the same portion/variant
+(a burger alone ≠ its menu/combo; "single" ≠ "double"). Return null when there is no equivalent. Each list-B item may be used at most once.
+
+LIST A (name | price RON):
+${blanks.map(r => `${r[0]} | ${r[1] || '?'}`).join('\n')}
+
+LIST B "${tab}" (name | price RON):
+${candidates.map(it => `${it.name} | ${it.list}`).join('\n')}
+
+Respond with ONLY a JSON object, no prose, no markdown: {"<list A name>": "<list B name exactly as written>" or null, ...}. Include every list A item as a key.`;
+    let res;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        res = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+          method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+          headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+          payload: JSON.stringify({ model: LLM_MODEL, max_tokens: 8000, messages: [{ role: 'user', content: prompt }] }),
+        });
+        if (res.getResponseCode() < 500) break;
+      } catch (e) { if (attempt === 3) { Logger.log(`${tab}: network error ${e.message}`); return; } }
+      Utilities.sleep(2000 * attempt);
+    }
+    const body = JSON.parse(res.getContentText());
+    if (res.getResponseCode() !== 200 || !body.content) { Logger.log(`${tab}: API ${res.getResponseCode()} ${res.getContentText().slice(0, 300)}`); return; }
+    const text = body.content.map(b => b.text || '').join('');
+    let out; try { out = JSON.parse(text.replace(/```json|```/g, '').trim()); } catch (e) { Logger.log(`${tab}: bad JSON: ${text.slice(0, 200)}`); return; }
+    const valid = new Set(candidates.map(it => it.name)), used = new Set();
+    let filled = 0;
+    rows.forEach(r => { const v = out[r[0]]; if (r[c].trim() || !v || !valid.has(v) || used.has(v)) return; r[c] = LLM_MARKER + v; used.add(v); filled++; });
+    Logger.log(`${mapName} / ${tab}: AI matched ${filled} of ${blanks.length}`);
+  });
+  rng.setValues(rows);
+}
+
 function ownShopsReport() {
   const ss = SpreadsheetApp.getActive(), today = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
   const listPrices = tab => {                       // name -> { list price (discount ignored), disc, oos, cat, pos }
@@ -128,12 +208,12 @@ function ownShopsReport() {
       if (!name || !(refP > 0)) continue;
       const cells = [], notes = []; let bad = false;
       tabs.forEach((tab, i) => {
-        const mapped = String(row[tabIdx[i]] || '').trim();
+        const raw = String(row[tabIdx[i]] || '').trim(), unreviewed = /^[~≈]/.test(raw), mapped = raw.replace(/^[~≈]/, '').trim();
         if (mapped === '-') { cells.push('<td align="center" style="color:#9ca3af;">n/a</td>'); return; }
         if (mapped) mappedPerTab[i].add(mapped);
         const p = mapped ? prices[i][mapped] : undefined;
         if (p == null) { cells.push(`<td align="center" style="color:${col.up};font-weight:700;">X</td>`); notes.push(`${platform(tab)}: lipsă`); bad = true; return; }
-        const tag = (p.disc ? ` <span style="color:${col.ADDED};font-size:11px;">−${p.disc}%</span>` : '')
+        const tag = (unreviewed ? ' <span style="color:#d97706;font-size:11px;" title="potrivire AI nerevizuită">≈</span>' : '') + (p.disc ? ` <span style="color:${col.ADDED};font-size:11px;">−${p.disc}%</span>` : '')
                   + (p.oos ? ` <span style="color:${col.REMOVED};font-size:11px;">epuizat</span>` : '');
         let d = p.list - refP;
         const sgr = SGR_TABS.includes(tab) && Math.abs(d + SGR) <= PRICE_TOLERANCE;

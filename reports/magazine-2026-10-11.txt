@@ -1,0 +1,572 @@
+Verificare magazine proprii
+2026-10-11 · X = lipsă · preț afișat = diferit de lista master
+Report A – TwoGuys Delivery — 82 probleme, 128 produse în plus
+Produs	Preț ref.	Glovo	Wolt	Bolt
+Combo
+COMBO | Combo American + Cartofi + Suc	74.00	79.00 (+5.00) −9%	X	X
+COMBO | Combo Beyond + Cartofi + Suc	78.00	83.00 (+5.00) −9%	X	X
+COMBO | Combo Crispy Hen + Cartofi + Suc	76.00	81.00 (+5.00) −9%	X	X
+COMBO | Combo Falafel + Cartofi + Suc	75.00	80.00 (+5.00) −9%	X	✓
+COMBO | Combo Frenchman + Cartofi + Suc	75.00	80.00 (+5.00) −9%	X	✓
+COMBO | Combo Halloumi + Cartofi + Suc	75.00	80.00 (+5.00) −9%	X	✓
+COMBO | Combo Italian + Cartofi + Suc	74.00	79.00 (+5.00) −9%	X	X
+COMBO | Combo Little Guy + Cartofi + Suc	64.00	69.00 (+5.00) −9%	X	X
+COMBO | Combo Mexican + Cartofi + Suc	75.00	80.00 (+5.00) −9%	X	X
+COMBO | Combo Miss Hen + Cartofi + Suc	75.00	80.00 (+5.00)	X	X
+COMBO | Combo Mushroom + Cartofi + Suc	75.00	80.00 (+5.00) −9%	X	✓
+COMBO | Combo Two Guys + Cartofi + Suc	89.00	94.00 (+5.00) −9%	X	64.00 (-25.00)
+MIC DEJUN
+MIC DEJUN | AVOCADO ON TOAST 260g	47.00	X	X	X
+MIC DEJUN | Castraveți murați 150g	11.00	X	X	✓
+MIC DEJUN | English Breakfast 450g	69.00	X	X	✓
+MIC DEJUN | Extra Bacon Prajit	9.00	X	X	X
+MIC DEJUN | Extra Ou prajit	7.00	X	X	X
+MIC DEJUN | MĂMĂLIGĂ CU SPANAC ȘI OU PRAJIT 400g	37.00	X	X	✓
+MIC DEJUN | Mix cârnați de casă și piept de porc	25.00	X	X	✓
+MIC DEJUN | OUĂ BENEDICT 350g	49.00	X	X	✓
+MIC DEJUN | OUĂ OCHI CU CARTOFI PRĂJIȚI ȘI TELEMEA 250g	37.00	X	X	✓
+MIC DEJUN | PAPARĂ CREMOASĂ CU BACON 400g	44.00	X	X	✓
+MIC DEJUN | ROMANIAN BREAKFAST 370g	59.00	X	X	✓
+MIC DEJUN | Salata Verde cu Nuci si House Dressing 170g	15.00	X	X	✓
+MIC DEJUN | Sos de usturoi 40g	6.00	X	X	✓
+MIC DEJUN | STEAK, OU ȘI SOS ROMÂNESC CU LEUȘTEAN 350g	107.00	X	X	✓
+RACORITOARE
+RACORITOARE | 7Up Doza Zero Zahar 330ml	10.00	X	X	X
+RACORITOARE | Apa Plata 500ml	10.00	X	X	X
+RACORITOARE | Pepsi Twist Doza 330ml	10.00	X	X	X
+RACORITOARE | Stella Artois 330ml	17.00	X	X	X
+BURGERI
+BURGERI | Beyond Burger	65.00	X	X	X
+Meniu Burger
+MENIU BURGERI | Meniu American Burger	69.00	✓ −10%	X	X
+MENIU BURGERI | Meniu Beyond Burger	73.00	✓ −10%	X	X
+MENIU BURGERI | Meniu Crispy Hen Burger	71.00	✓ −10%	X	X
+MENIU BURGERI | Meniu Falafel Burger	70.00	✓ −10%	X	✓
+MENIU BURGERI | Meniu Frenchman Burger	70.00	✓ −10%	X	X
+MENIU BURGERI | Meniu Halloumi Burger	70.00	✓ −10%	X	✓
+MENIU BURGERI | Meniu Italian Burger	69.00	✓ −10%	X	X
+MENIU BURGERI | Meniu Little Guy Burger	59.00	✓ −10%	X	✓
+MENIU BURGERI | Meniu Mexican Burger	70.00	✓ −10%	X	X
+MENIU BURGERI | Meniu Miss Hen Burger	70.00	✓	X	✓
+MENIU BURGERI | Meniu Mushroom Burger	70.00	✓ −10%	X	✓
+MENIU BURGERI | Meniu Two Guys Burger	84.00	✓ −10%	X	X
+Burger
+BURGERI | American Burger	61.00	✓ −10%	X	✓
+BURGERI | Crispy Hen Burger	63.00	✓ −10%	X	✓
+BURGERI | Falafel Burger	62.00	✓ −10%	X	✓
+BURGERI | Frenchman Burger	62.00	✓ −10%	X	✓
+BURGERI | Halloumi Burger	62.00	✓ −10%	X	✓
+BURGERI | Italian Burger	61.00	✓ −10%	X	✓
+BURGERI | Little Guy Burger	51.00	✓ −10%	X	✓
+BURGERI | Mexican Burger	62.00	✓ −10%	X	✓
+BURGERI | Miss Hen Burger	62.00	✓	X	✓
+BURGERI | Mushroom Burger	62.00	✓ −10%	X	✓
+BURGERI | Two Guys Burger	76.00	✓ −10%	X	✓
+Meniu Pui
+MENIU PUI | Meniu Aripioare Picante	61.00	✓ −10%	X	✓
+MENIU PUI | Meniu Pui Goujon	61.00	✓ −10%	X	✓
+Coaste
+COASTE | Coaste de Porc Marinate la Cuptor	90.00	✓ −10%	X	✓
+Salate
+SALATE | Salata Caesar	54.00	✓ −10%	X	✓
+Supe
+SUPE | Supa de Rosii cu Vodka si Telemea de vaca (390 gr)	41.00	✓ −10%	X	✓
+Extra
+EXTRA | Cartofi Prajiti	22.00	✓ −10%	X	✓
+EXTRA | Chifla	4.00	✓ −10%	X	✓
+EXTRA | Sos 2Hot2Handle	19.00	✓ −10%	X	✓
+EXTRA | Sos American	5.00	✓ −10%	X	X
+EXTRA | Sos Aripioare	5.00	✓ −10%	X	✓
+EXTRA | Sos Beyond	5.00	✓ −10%	X	✓
+EXTRA | Sos Cheddar si Mustar	9.00	✓ −10%	X	✓
+EXTRA | Sos Coaste	5.00	✓ −10%	X	✓
+EXTRA | Sos Crispy Hen	5.00	✓ −10%	X	X
+EXTRA | Sos Falafel	5.00	✓ −10%	X	✓
+EXTRA | Sos Frenchman	5.00	✓ −10%	X	✓
+EXTRA | Sos Halloumi	5.00	✓ −10%	X	✓
+EXTRA | Sos Italian	5.00	✓ −10%	X	✓
+EXTRA | Sos Mexican	5.00	✓ −10%	X	X
+EXTRA | Sos Miss Hen	5.00	✓ −10%	X	X
+EXTRA | Sos Mushroom	5.00	✓ −10%	X	✓
+EXTRA | Sos Two Guys	5.00	✓ −10%	X	X
+Racoritoare
+RACORITOARE | Apa Minerala 500ml	10.00	✓	X	✓
+RACORITOARE | Lipton Lamaie Doza 330ml	10.00	X	X	✓
+RACORITOARE | Lipton Piersici Doza 330ml	10.00	X	X	✓
+RACORITOARE | Mirinda Doza 330ml	10.00	X	X	✓
+RACORITOARE | Pepsi Doza 330ml	10.00	X	X	✓
+RACORITOARE | Pepsi Max Doza 330ml	10.00	X	X	✓
+Pe platformă dar nu în lista master — de verificat tabul „TwoGuys Delivery” din fișier:
+Platformă	Produs	Preț
+Combo
+Bolt	Combo American + Cartofi + Suc	74.00
+Bolt	Combo Beyond + Cartofi + Suc	78.00
+Bolt	Combo Crispy Hen + Cartofi + Suc	76.00
+Bolt	Combo Frenchman + Cartofi + Suc	75.00
+Bolt	Combo Italian + Cartofi + Suc	74.00
+Bolt	Combo Mexican + Cartofi + Suc	75.00
+Bolt	Combo Two Guys + Cartofi + Suc	89.00
+MIC DEJUN
+Bolt	Bacon prăjit de porc 20g	9.00
+Bolt	Cartofi Prajiti BR.	23.00
+Bolt	Ou prăjit 60g	7.00
+Bolt	Toast cu avocado 260g	47.00
+RACORITOARE
+Wolt	7Up Zero Zahar 330ml	10.00
+Wolt	Apa Minerala 500ml	10.00
+Wolt	Apa Plata 500ml	10.00
+Wolt	Lipton Lamaie 330ml	10.00
+Wolt	Lipton Piersici 330ml	10.00
+Wolt	Mirinda 330ml	10.00
+Wolt	Pepsi 330ml	10.00
+Wolt	Pepsi Max Dza 330ml	10.00
+Wolt	Pepsi Twist 330ml	10.00
+EXTRA
+Wolt	Cartofi Prajiti	22.00
+Wolt	Chifla	4.00
+Wolt	Sos 2Hot2Handle	19.00
+Wolt	Sos American	5.00
+Wolt	Sos Aripioare	5.00
+Wolt	Sos Beyond	5.00
+Wolt	Sos Cheddar si Mustar	9.00
+Wolt	Sos Coaste	5.00
+Wolt	Sos Crispy Hen	5.00
+Wolt	Sos Falafel	5.00
+Wolt	Sos Frenchman	5.00
+Wolt	Sos Halloumi	5.00
+Wolt	Sos Italian	5.00
+Wolt	Sos Mexican	5.00
+Wolt	Sos Miss Hen	5.00
+Wolt	Sos Mushroom	5.00
+Wolt	Sos Two Guys	5.00
+BURGERI
+Wolt	American Burger	61.00
+Wolt	Beyond Burger	65.00
+Wolt	Brisket afumat	66.00
+Wolt	Crispy Hen Burger	63.00
+Wolt	Falafel Burger	62.00
+Wolt	Frenchman Burger	62.00
+Wolt	Halloumi Burger	62.00
+Wolt	Italian Burger	61.00
+Wolt	Little Guy Burger	51.00
+Wolt	Mexican Burger	62.00
+Wolt	Miss Hen Burger	62.00
+Wolt	Mushroom Burger	62.00
+Wolt	Two Guys Burger	76.00
+SUPE
+Wolt	Supa de Rosii cu Vodka si Telemea de vaca (390 gr)	41.00
+Wolt	Supa Zucchini (390 gr)	41.00
+MENIU BURGERI
+Wolt	Meniu American Burger	69.00
+Wolt	Meniu Beyond Burger	73.00
+Wolt	Meniu Crispy Hen Burger	71.00
+Wolt	Meniu Falafel Burger	70.00
+Wolt	Meniu Frenchman Burger	70.00
+Wolt	Meniu Halloumi Burger	70.00
+Wolt	Meniu Italian Burger	69.00
+Wolt	Meniu Little Guy Burger	59.00
+Wolt	Meniu Mexican Burger	70.00
+Wolt	Meniu Miss Hen Burger	70.00
+Wolt	Meniu Mushroom Burger	70.00
+Wolt	Meniu Two Guys Burger	84.00
+COMBO
+Wolt	Combo American + Cartofi + Suc	74.00
+Wolt	Combo Beyond + Cartofi + Suc	78.00
+Wolt	Combo Crispy Hen + Cartofi + Suc	76.00
+Wolt	Combo Falafel + Cartofi + Suc	75.00
+Wolt	Combo Frenchman + Cartofi + Suc	75.00
+Wolt	Combo Halloumi + Cartofi + Suc	75.00
+Wolt	Combo Italian + Cartofi + Suc	74.00
+Wolt	Combo Little Guy + Cartofi + Suc	64.00
+Wolt	Combo Mexican + Cartofi + Suc	75.00
+Wolt	Combo Miss Hen + Cartofi + Suc	75.00
+Wolt	Combo Mushroom + Cartofi + Suc	75.00
+Wolt	Combo Two Guys + Cartofi + Suc	89.00
+Meniu Burger
+Bolt	Meniu American Burger	69.00
+Bolt	Meniu Beyond Burger	73.00
+Bolt	Meniu Crispy Hen Burger	71.00
+Bolt	Meniu Frenchman Burger	70.00
+Bolt	Meniu Italian Burger	69.00
+Bolt	Meniu Mexican Burger	70.00
+Bolt	Meniu Steak Burger	81.00
+Glovo	Meniu Steak Burger	81.00
+Bolt	Meniu Two Guys Burger	84.00
+COASTE
+Wolt	Coaste de Porc Marinate la Cuptor	90.00
+Burger
+Bolt	Beyond Burger	65.00
+Glovo	Beyond Burger	65.00
+Bolt	Brisket	66.00
+Glovo	Brisket	66.00
+Bolt	Steak Burger	64.00
+Glovo	Steak Burger	64.00
+MENIU PUI
+Wolt	Meniu Aripioare cu miere afumată și parmezan	62.00
+Wolt	Meniu Aripioare cu unt de arahide	62.00
+Wolt	Meniu Aripioare Kimchi	62.00
+Wolt	Meniu Aripioare Picante	61.00
+Wolt	Meniu Pui Goujon	61.00
+Meniu Pui
+Bolt	Meniu Aripioare cu miere afumată și parmezan	62.00
+Glovo	Meniu Aripioare cu miere afumată și parmezan	62.00
+Bolt	Meniu Aripioare cu unt de arahide	62.00
+Glovo	Meniu Aripioare cu unt de arahide	62.00
+Bolt	Meniu Aripioare Kimchi	62.00
+Glovo	Meniu Aripioare Kimchi	62.00
+SALATE
+Wolt	Salata Caesar	54.00
+Supe
+Bolt	Supa Zucchini (390 gr)	41.00
+Glovo	Supa Zucchini (390 gr)	41.00
+Desert
+Bolt	Budincă de brioșă cu stafide, vanilie, scorțișoară și sos englez – 300 g	11.00
+Glovo	Budincă de brioșă cu stafide, vanilie, scorțișoară și sos englez – 300 g	11.00
+Bolt	Panna Cotta	26.00
+Glovo	Panna Cotta	26.00
+Extra
+Bolt	American Sauce	5.00
+Bolt	Mexican Sauce	5.00
+Bolt	Miss Hen Sauce	5.00
+Bolt	Sos de pui crocant	5.00
+Bolt	Two Guys Sauce	5.00
+DESERT
+Wolt	Budincă de brioșă cu stafide, vanilie, scorțișoară și sos englez – 300 g	11.00
+Wolt	Panna Cotta	26.00
+Racoritoare
+Bolt	7Up Doza 330ml	10.00
+Glovo	7Up Zero Zahar 330ml	10.00
+Bolt	Apa Plata 500ml	10.00
+Glovo	Apa Plata 500ml	10.00
+Glovo	Lipton Lamaie 330ml	10.00
+Glovo	Lipton Piersici 330ml	10.00
+Glovo	Mirinda 330ml	10.00
+Glovo	Pepsi 330ml	10.00
+Glovo	Pepsi Max 330ml	10.00
+Glovo	Pepsi Twist 330ml	10.00
+Bolt	Pepsi Twist Doza 330ml	10.00
+Report B – TwoGuys Home — 53 probleme, 107 produse în plus
+Produs	Preț ref.	Burgerbrasov	Mypassage
+Sosuri si extra
+Sos Beyond	5.00	X	✓
+Sos Coaste	5.00	X	✓
+Sos Crispy Hen	5.00	X	✓
+Sos Frenchman	5.00	X	✓
+Sos Halloumi	5.00	X	✓
+Sos Italian	5.00	X	✓
+Sos Mexican	5.00	X	✓
+Sos Miss Hen	5.00	X	✓
+Sos Mushroom	5.00	X	✓
+Sos Ranch	5.00	X	✓
+Sos Two Guys	5.00	X	✓
+Breakfast
+Cartofi prăjiți cu sare	19.00	18.00 (-1.00)	✓
+Salată verde cu house dressing și nuci	8.00	X	✓
+Sos de usturoi	6.00	X	✓
+Altele
+7UP Doza 330ml	10.00	15.00 (+5.00)	X
+Apa Minerala 500ml	10.00	14.00 (+4.00)	X
+Apa Plata 500ml	10.00	14.00 (+4.00)	X
+AVOCADO ON TOAST	40.00	X	X
+BRIOȘĂ ÎNMUIATĂ ÎN SOS DE VANILIE	42.00	X	X
+Cartofi prăjiți – Cu parmezan	23.00	X	✓
+Cartofi prăjiți – Simplu	18.00	✓	X
+CARTOFI PRĂJIȚI CU OCHIURI ȘI SOS	30.00	X	X
+Coaste de Porc Marinate la Cuptor	79.00	✓	X
+ENGLISH BREAKFAST	61.00	X	X
+Extra bacon	8.00	7.00 (-1.00)	X
+Extra jalapeno	5.00	✓	X
+Extra ou de prepelita	5.00	✓	X
+Extra: Castraveți murați de casă	10.00	X	X
+Extra: Mix cârnați de casă și piept de porc	23.00	X	X
+Extra: Ou prăjit / poșat	6.00	X	X
+MĂMĂLIGĂ CU SPANAC ȘI OU PRĂJIT	30.00	X	X
+Meniu Aripioare cu miere afumata si parmezan	51.00	✓	X
+Meniu Aripioare cu unt de arahide	51.00	✓	X
+Meniu Aripioare Kimchi	51.00	✓	X
+Meniu Aripioare Picante	50.00	✓	X
+Meniu Pui Goujon	50.00	✓	X
+Mirinda Doza 330ml	10.00	15.00 (+5.00)	X
+OMLETĂ CREMOASĂ CU BACON	37.00	X	X
+OUĂ BENEDICT	42.00	X	X
+Pepsi Doza 330ml	10.00	15.00 (+5.00)	X
+Pepsi Max Doza 330ml	10.00	15.00 (+5.00)	X
+Pepsi Twist Doza 330ml	10.00	15.00 (+5.00)	X
+ROMANIAN BREAKFAST	51.00	X	X
+Salata Caesar	48.00	✓	X
+SALATĂ DE ROȘII	22.00	✓	X
+Sos American	5.00	X	X
+Sos Aripioare	5.00	X	X
+Steak & Eggs	97.00	X	X
+Steak Burger – Meniu	68.00	70.00 (+2.00)	70.00 (+2.00)
+Steak Burger – Single	52.00	54.00 (+2.00)	54.00 (+2.00)
+Supa de Rosii cu Vodka si Telemea (390 gr)	37.00	✓	X
+The &#8216;merican Burger – Meniu	57.00	✓	X
+The &#8216;merican Burger – Single	49.00	✓	X
+Pe platformă dar nu în lista master — de verificat tabul „TwoGuys Home” din fișier:
+Platformă	Produs	Preț
+Sosuri si extra
+Mypassage	Sos ’Merican	5.00
+Mypassage	Sos aripioare	5.00
+Mypassage	Sos Falafel	5.00
+Mypassage	Sos Ketchup	5.00
+Mypassage	Sos Korean	5.00
+Extra
+Mypassage	Brânză cheddar	5.00
+Mypassage	Chiflă	5.00
+Mypassage	Jalapeño	5.00
+Mypassage	Ou de prepeliță	5.00
+Breakfast
+Mypassage	Avocado on Toast	40.00
+Mypassage	Brioșă înmuiată în sos de vanilie	42.00
+Mypassage	Cartofi prăjiți cu ochiuri și sos	30.00
+Mypassage	Castraveți murați de casă	10.00
+Mypassage	English Breakfast	61.00
+Mypassage	Mămăligă cu spanac și ou prăjit	30.00
+Mypassage	Mix cârnați de casă și piept de porc	23.00
+Mypassage	Omletă cremoasă cu bacon	37.00
+Mypassage	Ou prăjit / poșat	6.00
+Mypassage	Ouă Benedict	42.00
+Mypassage	Romanian Breakfast	51.00
+Mypassage	Steak &#038; Eggs	97.00
+Supe
+Mypassage	Supă de roșii cu vodka și telemea	37.00
+Salate
+Mypassage	Salată Caesar	48.00
+Mypassage	Salată de roșii	22.00
+Altele
+Burgerbrasov	Absolut 50 ml	26.00
+Burgerbrasov	Anno 5 Francesca – Licorna Wine house 750 ml	145.00
+Burgerbrasov	Anno Feteasca Neagra – Licorna Wine house 750 ml	145.00
+Burgerbrasov	Anno Sauvignon Blanc – Licorna Wine house 750 ml	125.00
+Burgerbrasov	Antichello Merlot Trevenezie - Santa Sofia	24.00
+Burgerbrasov	Antichello Merlot Trevenezie - Santa Sofia 750 ml	111.00
+Burgerbrasov	Apa Filtrata 500 ml	9.00
+Burgerbrasov	Apa Filtrata 750 ml	13.00
+Burgerbrasov	Aperol Spritz	34.00
+Burgerbrasov	BECK’S 500 ml	18.00
+Burgerbrasov	Budinca din briosa cu stafide si sos englez 300 g	22.00
+Burgerbrasov	Bumbu Original 50 ml	25.00
+Burgerbrasov	Cafe Latte 200 ml	17.00
+Burgerbrasov	Campari Orange 200 ml	32.00
+Burgerbrasov	Cappuccino 150 ml	15.00
+Mypassage	Cartofi prăjiți – Cu sare	18.00
+Burgerbrasov	Chiflă	4.00
+Burgerbrasov	Chiftea vita 100g	11.00
+Burgerbrasov	Chivas Regal 12 Ani 50 ml	29.00
+Burgerbrasov	Ciocolata calda 175 ml	17.00
+Burgerbrasov	Citronada 400 ml	24.00
+Burgerbrasov	Contessa Filomarino Rosato – Tenute Girolama 750 ml	125.00
+Burgerbrasov	CORONA 355 ml	25.00
+Burgerbrasov	Courvoisier v.s 50 ml	31.00
+Burgerbrasov	English Breakfast 300 ml	19.00
+Burgerbrasov	Espresso 30 ml	11.00
+Burgerbrasov	Espresso dublu 60 ml	18.00
+Burgerbrasov	Evervess 250 ml	15.00
+Burgerbrasov	Flat White 150 ml	20.00
+Burgerbrasov	Flavored Frappe 300 ml	21.00
+Burgerbrasov	Flavored Latte 200 ml	18.00
+Burgerbrasov	FRANZISKANER weissbier 500 ml	25.00
+Burgerbrasov	Frappe 300 ml	20.00
+Burgerbrasov	FRESH 0% LAMAIE SI PORTOCALE 330 ml	16.00
+Burgerbrasov	FRESH 0% ZMEURA SI AFINE 330 ML	16.00
+Burgerbrasov	Fresh portocale 250 ml	22.00
+Burgerbrasov	Fruity Camomile 300 ml	19.00
+Burgerbrasov	Gin Malfy 50 ml	26.00
+Burgerbrasov	Gin Tonic 200 ml	32.00
+Burgerbrasov	Green Dragon Lung Ching 300 ml	19.00
+Burgerbrasov	Hugo	34.00
+Burgerbrasov	Il Conte Rosé & Rosé – Marche Rosato	24.00
+Burgerbrasov	Il Conte Rosé & Rosé – Marche Rosato 750 ml	111.00
+Burgerbrasov	Jagermeister 50 ml	25.00
+Burgerbrasov	LEFFE blonda/bruna 330 ml	25.00
+Burgerbrasov	Limonada clasica 400 ml	22.00
+Burgerbrasov	Limonada diverse arome 400 ml	23.00
+Burgerbrasov	Limonada Passage 400 ml	24.00
+Burgerbrasov	Mucho Mas Blanco – Felix Solis	24.00
+Burgerbrasov	Mucho Mas Blanco – Felix Solis 750 ml	111.00
+Burgerbrasov	Mustata IPA 330 ml	21.00
+Burgerbrasov	parmezan, pătrunjel si usturoi (pentru cartofi)	5.00
+Burgerbrasov	Pinot Grigio Garda DOC Le Calderare – Santa Sofia 750 ml	115.00
+Burgerbrasov	Prigat 250 ml	16.00
+Burgerbrasov	Primitivo di Manduria DOP Monte dei Cocci – Tenute Girolamo 750 ml	145.00
+Burgerbrasov	Prosecco Caposaldo DOC extra dry – Bernardi	25.00
+Burgerbrasov	Prosecco Caposaldo DOC extra dry – Bernardi 750 ml	111.00
+Burgerbrasov	Refreshing Mint 300 ml	19.00
+Burgerbrasov	Rom `N` Coke 200 ml	32.00
+Burgerbrasov	Ronnefeldt Sweet Berries 300 ml	19.00
+Burgerbrasov	sos	5.00
+Burgerbrasov	Sos de Cheddar si Muștar Englezesc 80 g	8.00
+Burgerbrasov	STAROPRAMEN 500 ml	18.00
+Burgerbrasov	STELLA ARTOIS 400 ml	18.00
+Burgerbrasov	STELLA ARTOIS 500 ml	18.00
+Burgerbrasov	STELLA ARTOIS N.A. 330 ml	18.00
+Mypassage	The ’Merican Burger – Meniu	57.00
+Mypassage	The ’Merican Burger – Single	49.00
+Burgerbrasov	Winter Harmony 300 ml	19.00
+Bauturi
+Mypassage	7UP doză 330 ml	10.00
+Mypassage	Apă minerală 500 ml	10.00
+Mypassage	Apă plată 500 ml	10.00
+Mypassage	Mirinda doză 330 ml	10.00
+Mypassage	Pepsi doză 330 ml	10.00
+Mypassage	Pepsi Max doză 330 ml	10.00
+Mypassage	Pepsi Twist doză 330 ml	10.00
+Breakfast, Extra
+Mypassage	Bacon	8.00
+Preparate Pui
+Mypassage	Meniu aripioare cu miere afumată și parmezan	51.00
+Mypassage	Meniu aripioare cu unt de arahide	51.00
+Mypassage	Meniu aripioare Kimchi	51.00
+Mypassage	Meniu aripioare picante	50.00
+Mypassage	Meniu pui Goujon	50.00
+Coaste Porc
+Mypassage	Coaste de porc marinate la cuptor	79.00
+Report C – Smash Delivery — 50 probleme, 82 produse în plus
+Produs	Preț ref.	Glovo	Wolt	Bolt
+Combo
+Combo | Combo Double Angus + Fries + Suc	68.00	73.00 (+5.00) −9%	X	X
+Combo | Combo Double Beyond + Fries + Suc	68.00	73.00 (+5.00) −9%	X	✓
+Combo | Combo Double Chicken + Fries + Suc	66.00	71.00 (+5.00) −9%	X	✓
+Combo | Combo Double Flat Angus + Fries + Suc	68.00	73.00 (+5.00) −9%	X	66.00 (-2.00)
+Combo | Combo Double Flat Beyond + Fries + Suc	68.00	73.00 (+5.00) −9%	X	X
+Combo | Combo Double Flat Chicken + Fries + Suc	66.00	71.00 (+5.00) −9%	X	58.00 (-8.00)
+Combo | Combo Single Angus + Fries + Suc	60.00	65.00 (+5.00)	X	X
+Combo | Combo Single Beyond + Fries + Suc	60.00	65.00 (+5.00) −9%	X	68.00 (+8.00)
+Combo | Combo Single Chicken + Fries + Suc	58.00	63.00 (+5.00) −9%	X	X
+Combo | Combo Sloppy Joe + Fries + Suc	70.00	75.00 (+5.00)	X	X
+Combo | Combo Tokyo Burger + Fries + Suc	62.00	67.00 (+5.00) −9%	X	60.00 (-2.00)
+Combo | Combo Triple Angus + Fries + Suc	77.00	82.00 (+5.00) −9%	X	60.00 (-17.00)
+Combo | Combo Triple Beyond + Fries + Suc	77.00	82.00 (+5.00) −9%	X	✓
+Combo | Combo Triple Chicken + Fries + Suc	75.00	80.00 (+5.00) −9%	X	✓
+Extra
+Extra | Ketchup	5.00	✓	X	✓
+Extra | Sos 2Hot2Handle	19.00	✓	X	✓
+Extra | Sos Cheddar	7.00	✓ −50%	X	✓
+Extra | Sos Usturoi	5.00	✓	X	✓
+Smash
+Smash | Double Angus	54.00	✓	X	X
+Smash | Double Beyond	54.00	✓	X	✓
+Smash | Double Chicken	52.00	✓	X	✓
+Smash | Flat Double Angus	54.00	✓	X	X
+Smash | Flat Double Beyond	54.00	✓	X	✓
+Smash | Flat Double Chicken	52.00	✓	X	✓
+Smash | Single Angus	46.00	X	X	X
+Smash | Single Beyond	46.00	✓	X	✓
+Smash | Single Chicken	44.00	✓	X	✓
+Smash | Triple Angus	63.00	✓	X	X
+Smash | Triple Beyond	63.00	✓	X	✓
+Smash | Triple Chicken	61.00	✓	X	✓
+Drinks
+Drinks | 7Up 0.33L	10.00	X	X	X
+Drinks | Apa Minerala 500ml	10.00	✓	X	✓ SGR
+Drinks | Apa Plata 500ml	10.00	✓	X	✓ SGR
+Drinks | Corona 0.33L	17.00	X	X	X
+Drinks | FRESH BERGENBIER 0% LEMON & ORANGE 330ml	10.00	✓	X	✓ SGR
+Drinks | FRESH BERGENBIER 0% RASPBERRIES & BLUEBERRIES 330ML	10.00	✓	X	✓ SGR
+Drinks | Lipton Lamaie Doza 250ml	10.00	X	X	✓ SGR
+Drinks | Lipton Piersici Doza 250ml	10.00	X	X	✓ SGR
+Drinks | Mirinda 0.33L	10.00	X	X	X
+Drinks | Pepsi 0.33L	10.00	X	X	X
+Drinks | Pepsi Max 330ml	10.00	X	X	X
+Drinks | Pepsi Twist 330ml	10.00	X	X	✓ SGR
+Drinks | Stella 0.33L	16.00	X	X	X
+Drinks | Stella NA 0.33L	16.00	X	X	X
+Special
+Smash | Flat Hot Lucy	59.00	✓	X	✓
+Special | Hot Lucy	59.00	✓	X	✓
+Special | Sloppy Joe	56.00	✓	X	X
+Special | Tokyo Burger	48.00	X	X	X
+Fries
+Fries | Fried Jalapeno	6.00	✓	X	✓
+Fries | Fries	14.00	X	X	X
+Pe platformă dar nu în lista master — de verificat tabul „Smash Delivery” din fișier:
+Platformă	Produs	Preț
+Combo
+Bolt	Combo Double Angus + Fries + Suc	68.00
+Wolt	Combo Double Angus + Fries + Suc	68.00
+Wolt	Combo Double Beyond + Fries + Suc	68.00
+Wolt	Combo Double Chicken + Fries + Suc	66.00
+Wolt	Combo Double Flat Angus + Fries + Suc	68.00
+Wolt	Combo Double Flat Beyond + Fries + Suc	68.00
+Wolt	Combo Double Flat Chicken + Fries + Suc	66.00
+Bolt	Combo Flat Double Angus + Fries + Suc	68.00
+Wolt	Combo Single Angus + Fries + Suc	60.00
+Wolt	Combo Single Beyond + Fries + Suc	60.00
+Wolt	Combo Single Chicken + Fries + Suc	58.00
+Bolt	Combo Sloppy Joe + Fries + Suc	70.00
+Wolt	Combo Sloppy Joe + Fries + Suc	70.00
+Bolt	Combo Tokyo Burger + Fries + Suc	62.00
+Wolt	Combo Tokyo Burger + Fries + Suc	62.00
+Bolt	Combo Triple Angus + Fries + Suc	77.00
+Wolt	Combo Triple Angus + Fries + Suc	77.00
+Wolt	Combo Triple Beyond + Fries + Suc	77.00
+Wolt	Combo Triple Chicken + Fries + Suc	75.00
+Extra
+Wolt	Ketchup	5.00
+Wolt	Sos 2Hot2Handle	19.00
+Wolt	Sos Cheddar	7.00
+Wolt	Sos Usturoi	5.00
+Smash
+Bolt	Double Angus	54.00
+Wolt	Double Angus	54.00
+Wolt	Double Beyond	54.00
+Wolt	Double Chicken	52.00
+Bolt	Flat Double Angus	54.00
+Wolt	Flat Double Angus	54.00
+Wolt	Flat Double Beyond	54.00
+Wolt	Flat Double Chicken	52.00
+Wolt	Flat Hot Lucy	59.00
+Bolt	Single Angus	46.00
+Glovo	Single Angus	46.00
+Wolt	Single Angus	46.00
+Wolt	Single Beyond	46.00
+Wolt	Single Chicken	44.00
+Bolt	Triple Angus	63.00
+Wolt	Triple Angus	63.00
+Wolt	Triple Beyond	63.00
+Wolt	Triple Chicken	61.00
+Drinks
+Wolt	7Up 0.33L	10.00
+Glovo	7Up 330ml	10.00
+Bolt	7Up Doza 330ml	9.50
+Wolt	Apa Minerala 500ml	10.00
+Wolt	Apa Plata 500ml	10.00
+Wolt	Corona 0.33L	17.00
+Bolt	Corona 355ml	16.50
+Glovo	Corona 355ml	17.00
+Wolt	FRESH BERGENBIER 0% LEMON & ORANGE 330ml	10.00
+Wolt	FRESH BERGENBIER 0% RASPBERRIES & BLUEBERRIES 330ML	10.00
+Glovo	Lipton Lamaie 250ml	10.00
+Wolt	Lipton Lamaie 250ml	10.00
+Glovo	Lipton Piersica 250ml	10.00
+Wolt	Lipton Piersici 250ml	10.00
+Wolt	Mirinda 0.33L	10.00
+Glovo	Mirinda 330ml	10.00
+Bolt	Mirinda Doza 330ml	9.50
+Wolt	Pepsi 0.33L	10.00
+Glovo	Pepsi 330ml	10.00
+Bolt	Pepsi Doza 330ml	9.50
+Glovo	Pepsi Max 330ml	10.00
+Wolt	Pepsi Max 330ml	10.00
+Bolt	Pepsi Max Doza 330ml	9.50
+Glovo	Pepsi Twist 330ml	10.00
+Wolt	Pepsi Twist 330ml	10.00
+Wolt	Stella 0.33L	16.00
+Bolt	Stella Artois 330ml	15.50
+Glovo	Stella Artois 330ml	16.00
+Bolt	Stella Artois N.A. 330ml	15.50
+Glovo	Stella Artois N.A. 330ml	16.00
+Wolt	Stella NA 0.33L	16.00
+Special
+Wolt	Hot Lucy	59.00
+Bolt	Sloopy Joe	56.00
+Wolt	Sloppy Joe	56.00
+Bolt	Tokyo Burger	48.00
+Glovo	Tokyo Burger	48.00
+Wolt	Tokyo Burger	48.00
+Fries
+Wolt	Fried Jalapeno	6.00
+Bolt	Fries	14.00
+Glovo	Fries	14.00
+Wolt	Fries	14.00
