@@ -279,29 +279,36 @@ function weeklyMetaReport() {
     const d = a - b;
     return d > 0 ? `<b style="color:${col.ADDED};">+${d}</b>` : '<span style="color:#9ca3af;">0</span>';
   };
-  const own = new Set(OWN_CHANNELS);
-  const pctOf = (suffix, rating) => rating == null ? null : suffix === 'B' ? Math.round(rating / 5 * 100) : suffix === 'W' ? Math.round(rating * 10) : rating;   // rows written before the Rating % column existed
+  const own = new Set(OWN_CHANNELS), skip = new Set(CFG().scheduledTabs);   // breakfast venues: not rated yet
+  // Glovo rating: the sheet may have turned "100%" into 1 (a percentage cell) → always work in whole percent
+  const ratingOf = (suffix, v) => { const r = num(v); return r == null ? null : suffix === 'G' && r <= 1 ? Math.round(r * 100) : r; };
+  const pctOf = (suffix, rating) => rating == null ? null : suffix === 'B' ? Math.round(rating / 5 * 100) : suffix === 'W' ? Math.round(rating * 10) : rating;
+  const showRating = (suffix, r) => r == null ? '—' : suffix === 'G' ? r + '%' : r.toFixed(suffix === 'B' ? 2 : 1);
+  // Wolt only publishes review counts in steps (20, 50, 100, 200, 500…), so show "50+" and report "Noi" only when the step goes up
+  const showReviews = (suffix, v) => v == null ? '—' : suffix === 'W' ? v + '+' : String(v);
   const sections = [];
   for (const [suffix, label] of [['G', 'Glovo'], ['W', 'Wolt'], ['B', 'Bolt']]) {
-    const list = Object.entries(byTab).filter(([tab]) => tab.endsWith(' - ' + suffix))
-      .map(([tab, t]) => ({ tab, now: t.now, before: t.before, pct: num(t.now[6]) != null ? num(t.now[6]) : pctOf(suffix, num(t.now[2])) }))
-      .sort((a, b) => ((b.pct == null ? -1 : b.pct) - (a.pct == null ? -1 : a.pct)) || ((num(b.now[2]) || 0) - (num(a.now[2]) || 0)));
+    const list = Object.entries(byTab).filter(([tab]) => tab.endsWith(' - ' + suffix) && !skip.has(tab))
+      .map(([tab, t]) => { const r = ratingOf(suffix, t.now[2]); return { tab, now: t.now, before: t.before, rating: r, pct: pctOf(suffix, r) }; })
+      .sort((a, b) => ((b.pct == null ? -1 : b.pct) - (a.pct == null ? -1 : a.pct)) || ((b.rating || 0) - (a.rating || 0)));
     if (!list.length) continue;
     const trs = list.map((x, i) => {
       const n = x.now, b = x.before || [];
       const name = esc(x.tab.replace(/ - [GWB]$/, ''));
       const stale = ymd(n[0]) < weekAgo ? ` <span style="color:#d97706;font-size:11px;" title="ultima citire">${ymd(n[0])}</span>` : '';
+      const before = ratingOf(suffix, b[2]), reviews = num(n[3]), reviewsBefore = num(b[3]);
+      const newRev = suffix === 'W' && reviews != null && reviewsBefore != null
+        ? (reviews > reviewsBefore ? `<b style="color:${col.ADDED};">↑ ${reviews}+</b>` : '<span style="color:#9ca3af;">—</span>')
+        : newReviews(reviews, reviewsBefore);
       return `<tr style="background:${i % 2 ? col.rowAlt : '#fff'};${own.has(x.tab) ? 'font-weight:700;' : ''}">
         <td align="center">${i + 1}</td><td>${name}${stale}</td>
-        <td align="right">${n[2] === '' ? '—' : esc(n[2])}</td><td align="right">${delta(num(n[2]), num(b[2]), suffix === 'G' ? 0 : 2, suffix === 'G' ? '%' : '')}</td>
-        <td align="right">${n[3] === '' ? '—' : esc(n[3])}</td><td align="right">${newReviews(num(n[3]), num(b[3]))}</td>
-        <td align="right">${n[4] === '' ? '—' : Number(n[4]).toFixed(2)}</td><td align="right">${delta(num(n[4]), num(b[4]), 2)}</td>
-        <td align="right">${n[5] || '—'}</td></tr>`;
+        <td align="right">${showRating(suffix, x.rating)}</td><td align="right">${delta(x.rating, before, suffix === 'G' ? 0 : suffix === 'B' ? 2 : 1, suffix === 'G' ? '%' : '')}</td>
+        <td align="right">${showReviews(suffix, reviews)}</td><td align="right">${newRev}</td></tr>`;
     }).join('');
     sections.push(`<div style="font-size:15px;font-weight:700;margin:20px 0 8px;">${label}</div>
       <table width="100%" cellpadding="6" cellspacing="0" style="border:1px solid #e5e7eb;font-size:13px;">
       <tr style="background:${col.headerBg};color:#fff;"><th>#</th><th align="left">Magazin</th><th align="right">Rating</th><th align="right">Δ 7 zile</th>
-      <th align="right">Recenzii</th><th align="right">Noi</th><th align="right">Taxă livrare</th><th align="right">Δ</th><th align="right">Timp</th></tr>${trs}</table>`);
+      <th align="right">Recenzii</th><th align="right">Noi</th></tr>${trs}</table>`);
   }
 
   const html = `
@@ -310,7 +317,7 @@ function weeklyMetaReport() {
     <div style="height:5px;background:${col.accent};"></div>
     <div style="padding:20px;border-bottom:1px solid #e5e7eb;text-align:center;">
       <div style="font-size:18px;font-weight:800;">Poziția pe platforme</div>
-      <div style="font-size:13px;color:#6b7280;">${todayStr} · comparat cu ${weekAgo} · magazinele noastre cu bold · Glovo = % clienți mulțumiți, Wolt = notă din 10, Bolt = notă din 5</div>
+      <div style="font-size:13px;color:#6b7280;">${todayStr} · comparat cu ${weekAgo} · magazinele noastre cu bold · Glovo = % clienți mulțumiți, Wolt = notă din 10 (recenzii în trepte: 20+, 50+…), Bolt = notă din 5</div>
     </div>
     <div style="padding:4px 20px 20px;">${sections.join('') || '<p style="color:#6b7280;">Nicio citire în Meta</p>'}</div>
     <div style="height:5px;background:${col.accent};"></div>

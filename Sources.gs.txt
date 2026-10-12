@@ -163,10 +163,30 @@ function woltMeta(venueUrl) {
   } catch (e) { Logger.log('woltMeta: ' + e.message); return null; }
 }
 
-// Glovo store page embeds "deliveryFeeValue":"2.99" and "rating":"100%" (no review count is exposed)
+// Glovo: the store page carries the numeric store id (…/stores/140754/addresses/…); Glovo's own API then gives
+// rating ("100%") and the review count shown in the app ("(57)"). Falls back to the page's escaped JSON for the rating.
 function glovoMeta(html) {
-  // the values sit inside an escaped JSON string, so each quote may be preceded by a backslash
-  const r = html.match(/\\?"rating\\?":\\?"(\d+)%/), fee = html.match(/\\?"deliveryFeeValue\\?":\\?"([\d.]+)/);
-  if (!r && !fee) return null;
-  return { rating: r ? r[1] + '%' : '', reviews: '', fee: fee ? Number(fee[1]) : '', minutes: '', pct: r ? Number(r[1]) : '' };
+  const id = html.match(/\/stores\/(\d+)\/addresses\/\d+/);
+  let rating = null, reviews = '', fee = '';
+  if (id) {
+    try {
+      const res = UrlFetchApp.fetch(`https://api.glovoapp.com/v3/stores/${id[1]}`, { muteHttpExceptions: true, headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36', 'Accept': 'application/json',
+        'Glovo-API-Version': '14', 'Glovo-App-Platform': 'web', 'Glovo-Location-City-Code': 'BRV', 'Glovo-Language-Code': 'ro',
+        'Glovo-Perseus-Session-Id': '1760300000000.000.abcdef0123456789', 'Glovo-Perseus-Client-Id': '1760300000000.000.abcdef0123456789',
+        'Origin': 'https://glovoapp.com', 'Referer': 'https://glovoapp.com/' } });
+      if (res.getResponseCode() === 200) {
+        const d = JSON.parse(res.getContentText()), ri = d.ratingInfo || {};
+        const m = String(d.rating || ri.ratingValue || '').match(/(\d+)/);
+        if (m) rating = Number(m[1]);
+        if (ri.ratingCount != null) reviews = Number(ri.ratingCount);
+        if (d.deliveryFeeInfo && d.deliveryFeeInfo.fee != null) fee = Number(d.deliveryFeeInfo.fee);
+      } else Logger.log('glovo api ' + res.getResponseCode());
+    } catch (e) { Logger.log('glovoMeta: ' + e.message); }
+  }
+  // the page's values sit inside an escaped JSON string, so each quote may be preceded by a backslash
+  if (rating == null) { const r = html.match(/\\?"rating\\?":\\?"(\d+)%/); if (r) rating = Number(r[1]); }
+  if (fee === '') { const f = html.match(/\\?"deliveryFeeValue\\?":\\?"([\d.]+)/); if (f) fee = Number(f[1]); }
+  if (rating == null && fee === '') return null;
+  return { rating: rating == null ? '' : rating, reviews, fee, minutes: '', pct: rating == null ? '' : rating };   // rating = % of positive reviews
 }
