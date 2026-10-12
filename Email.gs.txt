@@ -285,7 +285,7 @@ function weeklyMetaReport() {
   for (const [suffix, label] of [['G', 'Glovo'], ['W', 'Wolt'], ['B', 'Bolt']]) {
     const list = Object.entries(byTab).filter(([tab]) => tab.endsWith(' - ' + suffix))
       .map(([tab, t]) => ({ tab, now: t.now, before: t.before, pct: num(t.now[6]) != null ? num(t.now[6]) : pctOf(suffix, num(t.now[2])) }))
-      .sort((a, b) => (b.pct == null ? -1 : b.pct) - (a.pct == null ? -1 : a.pct));
+      .sort((a, b) => ((b.pct == null ? -1 : b.pct) - (a.pct == null ? -1 : a.pct)) || ((num(b.now[2]) || 0) - (num(a.now[2]) || 0)));
     if (!list.length) continue;
     const trs = list.map((x, i) => {
       const n = x.now, b = x.before || [];
