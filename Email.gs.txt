@@ -275,15 +275,16 @@ function weeklyMetaReport() {
   };
   const newReviews = (a, b) => {
     if (a == null) return '<span style="color:#9ca3af;">—</span>';
-    if (b == null) return `<span style="color:#9ca3af;">${a}</span>`;
+    if (b == null) return '<span style="color:#9ca3af;">—</span>';
     const d = a - b;
     return d > 0 ? `<b style="color:${col.ADDED};">+${d}</b>` : '<span style="color:#9ca3af;">0</span>';
   };
   const own = new Set(OWN_CHANNELS);
+  const pctOf = (suffix, rating) => rating == null ? null : suffix === 'B' ? Math.round(rating / 5 * 100) : suffix === 'W' ? Math.round(rating * 10) : rating;   // rows written before the Rating % column existed
   const sections = [];
   for (const [suffix, label] of [['G', 'Glovo'], ['W', 'Wolt'], ['B', 'Bolt']]) {
     const list = Object.entries(byTab).filter(([tab]) => tab.endsWith(' - ' + suffix))
-      .map(([tab, t]) => ({ tab, now: t.now, before: t.before, pct: num(t.now[6]) }))
+      .map(([tab, t]) => ({ tab, now: t.now, before: t.before, pct: num(t.now[6]) != null ? num(t.now[6]) : pctOf(suffix, num(t.now[2])) }))
       .sort((a, b) => (b.pct == null ? -1 : b.pct) - (a.pct == null ? -1 : a.pct));
     if (!list.length) continue;
     const trs = list.map((x, i) => {
