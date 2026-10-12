@@ -153,6 +153,7 @@ const SETTINGS_DEFAULTS = [
   // key, default, description shown in the tab
   ['alert_email',          ALERT_EMAIL, 'Cine primește raportul zilnic al concurenței (adrese separate prin virgulă)'],
   ['weekly_email',         ALERT_EMAIL, 'Cine primește raportul săptămânal al concurenței'],
+  ['meta_email',           ALERT_EMAIL, 'Cine primește raportul săptămânal cu ratinguri/recenzii de pe platforme'],
   ['own_email',            ALERT_EMAIL, 'Cine primește verificarea magazinelor proprii'],
   ['missing_runs',         3,           'De câte zile la rând trebuie să lipsească un produs ca să fie raportat DELISTAT'],
   ['min_diff_lei',         0,           'Ignoră schimbările de preț mai mici de atâția lei (0 = raportează tot)'],
@@ -189,6 +190,7 @@ function CFG() {
     alertEmail: list(raw.alert_email).join(',') || ALERT_EMAIL,
     ownEmail: list(raw.own_email).join(',') || ALERT_EMAIL,
     weeklyEmail: list(raw.weekly_email).join(',') || ALERT_EMAIL,
+    metaEmail: list(raw.meta_email).join(',') || ALERT_EMAIL,
     missingRuns: Math.max(1, num(raw.missing_runs, 3)),
     minDiffLei: num(raw.min_diff_lei, 0),
     minDiffPct: num(raw.min_diff_pct, 0) / 100,
@@ -221,10 +223,11 @@ function setupSettings() {
 // One-time: (re)create all time triggers. Safe to re-run: existing triggers for these functions are replaced.
 function installTriggers() {
   const plan = { dailyCheck: 10, middayRefresh: 12, ownShopsReport: 13 };   // hour of day (spreadsheet time zone)
-  ScriptApp.getProjectTriggers().forEach(t => { if (t.getHandlerFunction() in plan || t.getHandlerFunction() === 'weeklyDigest') ScriptApp.deleteTrigger(t); });
+  const weekly = { weeklyDigest: 8, weeklyMetaReport: 9 };                     // Monday, hour of day
+  ScriptApp.getProjectTriggers().forEach(t => { if (t.getHandlerFunction() in plan || t.getHandlerFunction() in weekly) ScriptApp.deleteTrigger(t); });
   Object.entries(plan).forEach(([fn, h]) => ScriptApp.newTrigger(fn).timeBased().everyDays(1).atHour(h).create());
-  ScriptApp.newTrigger('weeklyDigest').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(8).create();
-  Logger.log('Triggers: dailyCheck 10:00, middayRefresh 12:00, ownShopsReport 13:00, weeklyDigest Monday 08:00');
+  Object.entries(weekly).forEach(([fn, h]) => ScriptApp.newTrigger(fn).timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(h).create());
+  Logger.log('Triggers: dailyCheck 10:00, middayRefresh 12:00, ownShopsReport 13:00, weeklyDigest Monday 08:00, weeklyMetaReport Monday 09:00');
 }
 const REMOVED_SHEET = '_Removed';
 const REPORT_HEADERS = ['Date', 'Competitor', 'Change', 'Item', 'Old price', 'New price', 'Diff', 'Diff %'];
