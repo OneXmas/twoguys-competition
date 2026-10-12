@@ -36,10 +36,10 @@ const COMPETITORS = [
   { sheet: 'TheSmash - G', nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/the-smash-by-two-guys-brv' },
   { sheet: 'TheSmash - W', nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU',  url: 'https://wolt.com/en/rou/brasov/restaurant/smash-by-two-guys-67fd02d15c0da5b09cffb191' },
   { sheet: 'TheSmash - B', nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/138455-the-smash-by-two-guys/', midday: true },
-  // own Wolt virtual brands — TODO: each needs its own Wolt URL (all three currently point at TwoGuys Delivery)
-  { sheet: 'Passage by TwoGuys - W', nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/two-guys-delivery-67dac8fa3d53c71097395624' },
-  { sheet: 'Br. by Passage - W',     nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/two-guys-delivery-67dac8fa3d53c71097395624' },
-  { sheet: 'Br. by TwoGuys - W',     nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/two-guys-delivery-67dac8fa3d53c71097395624' },
+  // own Wolt virtual brands — TODO: 'Br. by Passage' and 'Br. by TwoGuys' share the same Wolt ID (…625); one URL is wrong
+  { sheet: 'Passage by TwoGuys - W', nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/en/rou/brasov/restaurant/passage-brasov-685661d3fed8b72a16338d89' },
+  { sheet: 'Br. by Passage - W',     nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/breakfast-by-passage-67dac8fa3d53c71097395625' },
+  { sheet: 'Br. by TwoGuys - W',     nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/breakfast-by-two-guys-67dac8fa3d53c71097395625' },
   // competitor sites
   { sheet: 'Buffaloeat',   nameCol: 'A', priceCol: 'B' },                                   // IMPORTXML
   { sheet: 'Egg&Smash',    nameCol: 'A', priceCol: 'B' },                                   // IMPORTXML
