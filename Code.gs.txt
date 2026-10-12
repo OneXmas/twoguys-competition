@@ -618,6 +618,28 @@ function middayRefresh() {
   }
 }
 
+// Ratings / fees only, for every Glovo, Wolt and Bolt tab — no menu changes, no daily email. Run by hand any time.
+function refreshMeta() {
+  const ss = SpreadsheetApp.getActive();
+  for (const cfg of COMPETITORS) {
+    if (!cfg.url || !/^(GLOVO|WOLT|BOLT)_MENU$/.test(cfg.fn)) continue;
+    LAST_META = null;
+    try {
+      if (cfg.fn === 'GLOVO_MENU') {
+        const html = UrlFetchApp.fetch(cfg.url, { muteHttpExceptions: true, headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36' } }).getContentText();
+        LAST_META = glovoMeta(html);
+      } else if (cfg.fn === 'WOLT_MENU') {
+        LAST_META = woltMeta(cfg.url);
+      } else {
+        const m = String(cfg.url).match(/\/p\/(\d+)/);
+        if (m) { LAST_META = boltMeta(m[1]); Utilities.sleep(4000); }   // Bolt rate-limits bursts
+      }
+    } catch (e) { Logger.log(`${cfg.sheet}: ${e.message}`); }
+    Logger.log(`${cfg.sheet}: ${LAST_META ? JSON.stringify(LAST_META) : 'no data'}`);
+    writeMeta(ss, cfg.sheet);
+  }
+}
+
 // Meta tab: one row per platform tab per run — rating as shown by the platform (Bolt /5, Wolt /10, Glovo %),
 // reviews (Bolt, Wolt), delivery fee, ETA (Bolt) and a comparable "Rating %" column.
 function writeMeta(ss, tab) {

@@ -60,16 +60,20 @@ function BOLT_MENU(storeUrl) {
   });
   if (rows.length < 2) return 'NO ITEMS';
 
-  LAST_META = null;
+  Utilities.sleep(1500);
+  LAST_META = boltMeta(providerId);
+  return rows;
+}
+
+// Bolt store details: rating (out of 5), review count, delivery fee, ETA
+function boltMeta(providerId) {
   try {
-    Utilities.sleep(1500);
     const p = boltGet('getProviderDetails', { provider_id: providerId, city_id: 802 }).provider;
     const eta = p.min_delivery_eta ? `${Math.round(p.min_delivery_eta / 60)}–${Math.round(p.max_delivery_eta / 60)}` : '';
     const rating = p.rating_info ? p.rating_info.rating : '';
-    LAST_META = { rating, reviews: p.rating_info ? p.rating_info.count : '',
+    return { rating, reviews: p.rating_info ? p.rating_info.count : '',
       fee: p.delivery_price ? p.delivery_price.value : '', minutes: eta, pct: rating ? Math.round(rating / 5 * 100) : '' };
-  } catch (e) { Logger.log(`${providerId}: meta skipped (${e.message})`); }
-  return rows;
+  } catch (e) { Logger.log(`${providerId}: meta skipped (${e.message})`); return null; }
 }
 
 // Dump the whole competitor menu: =FB_MENU("uid")
