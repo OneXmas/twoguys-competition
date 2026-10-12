@@ -305,7 +305,7 @@ function dailyCheck() {
         else if (!r.disc && o.disc) push('DISCOUNT_ENDED', name, '', r.price);
       };
       const moved = (d, base) => d !== 0 && Math.abs(d) >= F.minDiffLei && Math.abs(d / base) >= F.minDiffPct;
-      const added = [], removed = [];
+      const added = [];
 
       for (const r of Object.values(cur)) {
         const o = prev[r.key];
@@ -317,25 +317,30 @@ function dailyCheck() {
         else if (moved(d, o.price)) push('PRICE_CHANGED', r.name, o.price, r.price);
         pushDisc(r.name, r, o);
       }
-      for (const o of Object.values(prev)) {
-        if (cur[o.key]) continue;
-        if (o.miss + 1 < F.missingRuns) { newSnap.push([cfg.sheet, o.key, o.name, o.price, o.disc, o.first, o.miss + 1]); continue; } // pending, keep quietly
-        removed.push(o);
-      }
+      const missing = Object.values(prev).filter(o => !cur[o.key]);   // includes items still inside the grace period
 
+      // rename = a missing item and a new item that look alike: similar name, or one name contains the other at (almost) the same price
+      const looksRenamed = (o, a) => {
+        if (similarity(normName(o.name), normName(a.name)) >= RENAME_THRESHOLD) return true;
+        const x = ` ${cosmeticKey(o.name)} `, y = ` ${cosmeticKey(a.name)} `;
+        return (x.includes(y) || y.includes(x)) && Math.abs(a.price - o.price) <= Math.max(1, o.price * 0.1);
+      };
       const usedAdd = new Set();
-      for (const o of removed) {
+      for (const o of missing) {
         let best = null, bestScore = 0;
         for (const a of added) {
-          if (usedAdd.has(a.key)) continue;
+          if (usedAdd.has(a.key) || !looksRenamed(o, a)) continue;
           const s = similarity(normName(o.name), normName(a.name));
           if (s > bestScore) { bestScore = s; best = a; }
         }
-        if (best && bestScore >= RENAME_THRESHOLD) {
+        if (best) {
           usedAdd.add(best.key);
           if (cosmeticKey(o.name) !== cosmeticKey(best.name)) push('RENAMED', `${o.name} → ${best.name}`, o.price, best.price);
           else if (moved(round2(best.price - o.price), o.price)) push('PRICE_CHANGED', best.name, o.price, best.price);
           pushDisc(best.name, best, o);
+          best.first = o.first;                                        // same product: keep its original first-seen date
+        } else if (o.miss + 1 < F.missingRuns) {
+          newSnap.push([cfg.sheet, o.key, o.name, o.price, o.disc, o.first, o.miss + 1]);   // pending, keep quietly
         } else {
           push('REMOVED', `${o.name} (${daysSince(o.first)} zile)`, o.price, '');
           (gone[cfg.sheet] = gone[cfg.sheet] || {})[o.key] = { name: o.name, price: o.price, since: today };
