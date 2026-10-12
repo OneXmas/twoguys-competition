@@ -65,8 +65,9 @@ function BOLT_MENU(storeUrl) {
     Utilities.sleep(1500);
     const p = boltGet('getProviderDetails', { provider_id: providerId, city_id: 802 }).provider;
     const eta = p.min_delivery_eta ? `${Math.round(p.min_delivery_eta / 60)}–${Math.round(p.max_delivery_eta / 60)}` : '';
-    LAST_META = { rating: p.rating_info ? p.rating_info.rating : '', reviews: p.rating_info ? p.rating_info.count : '',
-      fee: p.delivery_price ? p.delivery_price.value : '', minutes: eta };
+    const rating = p.rating_info ? p.rating_info.rating : '';
+    LAST_META = { rating, reviews: p.rating_info ? p.rating_info.count : '',
+      fee: p.delivery_price ? p.delivery_price.value : '', minutes: eta, pct: rating ? Math.round(rating / 5 * 100) : '' };
   } catch (e) { Logger.log(`${providerId}: meta skipped (${e.message})`); }
   return rows;
 }
@@ -143,5 +144,24 @@ function WOLT_MENU(venueUrl) {
     const n = it.name.trim(), cat = catOf[it.id] || '';
     rows.push([seen[n] > 1 && cat ? `${n} (${cat})` : n, it.price / 100, cat, it.id]);
   });
+  LAST_META = woltMeta(venueUrl);
   return rows;
+}
+
+// Wolt venue page embeds "rating":{"score":"8.8","volume":20} (score out of 10, volume = number of reviews) and "delivery_price":149 (bani)
+function woltMeta(venueUrl) {
+  try {
+    const html = UrlFetchApp.fetch(venueUrl, { muteHttpExceptions: true, headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36' } }).getContentText();
+    const r = html.match(/"rating":\{[^}]*"score_raw":([\d.]+)[^}]*"volume":(\d+)/);
+    const fee = html.match(/"delivery_price":(\d+)/);
+    if (!r && !fee) return null;
+    return { rating: r ? Number(r[1]) : '', reviews: r ? Number(r[2]) : '', fee: fee ? Number(fee[1]) / 100 : '', minutes: '', pct: r ? Math.round(Number(r[1]) * 10) : '' };
+  } catch (e) { Logger.log('woltMeta: ' + e.message); return null; }
+}
+
+// Glovo store page embeds "deliveryFeeValue":"2.99" and "rating":"100%" (no review count is exposed)
+function glovoMeta(html) {
+  const r = html.match(/"rating":"(\d+)%"/), fee = html.match(/"deliveryFeeValue":"([\d.]+)"/);
+  if (!r && !fee) return null;
+  return { rating: r ? r[1] + '%' : '', reviews: '', fee: fee ? Number(fee[1]) : '', minutes: '', pct: r ? Number(r[1]) : '' };
 }

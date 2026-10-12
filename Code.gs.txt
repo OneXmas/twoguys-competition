@@ -103,10 +103,12 @@ function refreshSources() {
     if (cfg.midday) { status[cfg.sheet] = ''; continue; }   // refreshed by middayRefresh()
     if (cfg.fn && cfg.url) {
       let data;
+      LAST_META = null;
       try { data = this[cfg.fn](cfg.url); } catch (e) { data = 'ERR ' + e.message; }
       if (Array.isArray(data) && data.length > 1) {
         sh.getRange(1, 1, sh.getMaxRows(), data[0].length).clearContent();
         sh.getRange(1, 1, data.length, data[0].length).setValues(data);
+        writeMeta(ss, cfg.sheet);                                   // Glovo / Wolt rating & fee (Bolt is written by middayRefresh)
         status[cfg.sheet] = '';
       } else {
         status[cfg.sheet] = String(data);   // e.g. HTTP 404, NO ITEMS
@@ -522,6 +524,7 @@ function GLOVO_MENU(storeUrl) {
     const price = num(spans[0] || ''), orig = spans[1] ? num(spans[1]) : '';
     rows.push([section, m[2].trim(), price, orig]);
   }
+  LAST_META = glovoMeta(html);
   return rows.length > 1 ? rows : 'NO ITEMS – check URL or blocked';
 }
 
@@ -608,12 +611,19 @@ function middayRefresh() {
     }
     sh.getRange(1, 1, sh.getMaxRows(), data[0].length).clearContent();
     sh.getRange(1, 1, data.length, data[0].length).setValues(data);
-        if (LAST_META) {
-      const ms = ss.getSheetByName('Meta') || ss.insertSheet('Meta');
-      if (ms.getLastRow() === 0) ms.appendRow(['Date', 'Competitor', 'Rating', 'Reviews', 'Delivery fee', 'Delivery min']);
-      ms.appendRow([Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd'), cfg.sheet,
-        LAST_META.rating, LAST_META.reviews, LAST_META.fee, LAST_META.minutes]);
-      LAST_META = null;
-    }
+    writeMeta(ss, cfg.sheet);
   }
+}
+
+// Meta tab: one row per platform tab per run — rating as shown by the platform (Bolt /5, Wolt /10, Glovo %),
+// reviews (Bolt, Wolt), delivery fee, ETA (Bolt) and a comparable "Rating %" column.
+function writeMeta(ss, tab) {
+  if (!LAST_META) return;
+  const ms = ss.getSheetByName('Meta') || ss.insertSheet('Meta');
+  const headers = ['Date', 'Competitor', 'Rating', 'Reviews', 'Delivery fee', 'Delivery min', 'Rating %'];
+  if (ms.getLastRow() === 0) ms.appendRow(headers);
+  else if (ms.getLastColumn() < headers.length) ms.getRange(1, 1, 1, headers.length).setValues([headers]);
+  ms.appendRow([Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd'), tab,
+    LAST_META.rating, LAST_META.reviews, LAST_META.fee, LAST_META.minutes, LAST_META.pct]);
+  LAST_META = null;
 }
