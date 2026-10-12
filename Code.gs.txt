@@ -144,7 +144,8 @@ const RENAME_THRESHOLD = 0.8;
 const SETTINGS_SHEET = 'Settings';
 const SETTINGS_DEFAULTS = [
   // key, default, description shown in the tab
-  ['alert_email',          ALERT_EMAIL, 'Cine primește raportul zilnic și cel săptămânal (adrese separate prin virgulă)'],
+  ['alert_email',          ALERT_EMAIL, 'Cine primește raportul zilnic al concurenței (adrese separate prin virgulă)'],
+  ['weekly_email',         ALERT_EMAIL, 'Cine primește raportul săptămânal al concurenței'],
   ['own_email',            ALERT_EMAIL, 'Cine primește verificarea magazinelor proprii'],
   ['missing_runs',         3,           'De câte zile la rând trebuie să lipsească un produs ca să fie raportat DELISTAT'],
   ['min_diff_lei',         0,           'Ignoră schimbările de preț mai mici de atâția lei (0 = raportează tot)'],
@@ -175,6 +176,7 @@ function CFG() {
   _cfg = {
     alertEmail: list(raw.alert_email).join(',') || ALERT_EMAIL,
     ownEmail: list(raw.own_email).join(',') || ALERT_EMAIL,
+    weeklyEmail: list(raw.weekly_email).join(',') || ALERT_EMAIL,
     missingRuns: Math.max(1, num(raw.missing_runs, 3)),
     minDiffLei: num(raw.min_diff_lei, 0),
     minDiffPct: num(raw.min_diff_pct, 0) / 100,

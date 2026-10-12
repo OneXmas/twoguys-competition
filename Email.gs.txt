@@ -239,7 +239,7 @@ function weeklyDigest() {
     <div style="height:5px;background:${col.accent};"></div>
   </div></div>`;
 
-  MailApp.sendEmail({ to: CFG().alertEmail, subject: `📊 Raport săptămânal concurență (${sinceStr} → ${todayStr})`, htmlBody: html });
+  MailApp.sendEmail({ to: CFG().weeklyEmail, subject: `📊 Raport săptămânal concurență (${sinceStr} → ${todayStr})`, htmlBody: html });
 }
 
 
