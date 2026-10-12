@@ -161,7 +161,8 @@ function woltMeta(venueUrl) {
 
 // Glovo store page embeds "deliveryFeeValue":"2.99" and "rating":"100%" (no review count is exposed)
 function glovoMeta(html) {
-  const r = html.match(/"rating":"(\d+)%"/), fee = html.match(/"deliveryFeeValue":"([\d.]+)"/);
+  // the values sit inside an escaped JSON string, so each quote may be preceded by a backslash
+  const r = html.match(/\\?"rating\\?":\\?"(\d+)%/), fee = html.match(/\\?"deliveryFeeValue\\?":\\?"([\d.]+)/);
   if (!r && !fee) return null;
   return { rating: r ? r[1] + '%' : '', reviews: '', fee: fee ? Number(fee[1]) : '', minutes: '', pct: r ? Number(r[1]) : '' };
 }
