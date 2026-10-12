@@ -261,7 +261,7 @@ function weeklyMetaReport() {
   const byTab = {};
   rows.forEach(r => {
     const d = ymd(r[0]), t = byTab[r[1]] = byTab[r[1]] || { now: null, before: null };
-    if (!t.now || d > ymd(t.now[0])) t.now = r;
+    if (!t.now || d >= ymd(t.now[0])) t.now = r;              // same day twice (manual refreshMeta): the later row wins
     if (d <= weekAgo && (!t.before || d > ymd(t.before[0]))) t.before = r;
   });
 
