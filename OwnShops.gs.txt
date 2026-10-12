@@ -1,7 +1,9 @@
 const OWN_REPORTS = [
-  { name: 'Report A – TwoGuys Delivery', map: 'TwoGuys Delivery', tabs: ['TwoGuys - G', 'TwoGuys - W', 'TwoGuys - B'] },
+  { name: 'Report A – TwoGuys Delivery', map: 'TwoGuys Delivery', tabs: ['TwoGuys - G', 'TwoGuys - W', 'TwoGuys - B', 'Passage by TwoGuys - W'] },
   { name: 'Report B – TwoGuys Home',      map: 'TwoGuys Home', tabs: ['Burgerbrasov', 'Mypassage'] },
   { name: 'Report C – Smash Delivery',   map: 'Smash Delivery', tabs: ['TheSmash - G', 'TheSmash - W', 'TheSmash - B'] },
+  // breakfast: two Wolt venues + the breakfast category inside the full-menu venues (those carry many more products, so no "extra" check there)
+  { name: 'Report D – Breakfast',        map: 'Breakfast', tabs: ['Br. by Passage - W', 'Br. by TwoGuys - W', 'TwoGuys - W', 'Passage by TwoGuys - W'], noExtras: ['TwoGuys - W', 'Passage by TwoGuys - W'] },
 ];
 const PRICE_TOLERANCE = 0.01;
 const SGR = 0.5;                                   // deposit not shown in Bolt prices
@@ -172,6 +174,34 @@ Respond with ONLY a JSON object, no prose, no markdown: {"<list A name>": "<list
   rng.setValues(rows);
 }
 
+// Adds any platform column that a master tab is missing (e.g. a newly tracked venue) and fills it by fuzzy match. Safe to re-run.
+function syncMasterColumns() {
+  const ss = SpreadsheetApp.getActive();
+  for (const r of OWN_REPORTS) {
+    const sh = ss.getSheetByName(r.map); if (!sh || sh.getLastRow() < 1) continue;
+    const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+    r.tabs.filter(t => !headers.includes(t)).forEach(t => { headers.push(t); sh.getRange(1, headers.length).setValue(t).setFontWeight('bold'); Logger.log(r.map + ': added column ' + t); });
+  }
+  buildRefSheets();
+}
+
+// One-time: (re)build a master tab from one platform tab. Column A/B = that platform's names and list prices,
+// the other platform columns are fuzzy-matched. REPLACES the tab. Run it when the base platform shows the full menu.
+function rebuildMasterFrom(mapName, baseTab) {
+  const ss = SpreadsheetApp.getActive();
+  const r = OWN_REPORTS.find(x => x.map === mapName);
+  const sh = ss.getSheetByName(mapName) || ss.insertSheet(mapName);
+  const rows = platformItems(ss, baseTab).map(it => [it.name, it.list, ...r.tabs.map(t => t === baseTab ? it.name : '')]);
+  sh.clearContents();
+  sh.getRange(1, 1, 1, 2 + r.tabs.length).setValues([['Produs', 'Preț', ...r.tabs]]).setFontWeight('bold');
+  if (rows.length) sh.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
+  sh.setFrozenRows(1); sh.setFrozenColumns(2);
+  buildRefSheets();
+  Logger.log(mapName + ': ' + rows.length + ' products from ' + baseTab);
+}
+// Breakfast master: run on a Wednesday–Friday between 10:00 and 15:00 (after the 10:00 dailyCheck has refreshed the Wolt tabs).
+function rebuildBreakfastMaster() { rebuildMasterFrom('Breakfast', 'Br. by Passage - W'); }
+
 function ownShopsReport() {
   const ss = SpreadsheetApp.getActive(), today = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
   const listPrices = tab => {                       // name -> { list price (discount ignored), disc, oos, cat, pos }
@@ -206,13 +236,13 @@ function ownShopsReport() {
     for (const row of rows) {
       const name = String(row[0]).trim(), refP = Number(row[1]);
       if (!name || !(refP > 0)) continue;
-      const cells = [], notes = []; let bad = false;
+      const cells = [], notes = [], rowCat = catOf(row, name); let bad = false;
       tabs.forEach((tab, i) => {
         const raw = String(row[tabIdx[i]] || '').trim(), unreviewed = /^[~≈]/.test(raw), mapped = raw.replace(/^[~≈]/, '').trim();
         if (mapped === '-') { cells.push('<td align="center" style="color:#9ca3af;">n/a</td>'); return; }
         if (mapped) mappedPerTab[i].add(mapped);
         const p = mapped ? prices[i][mapped] : undefined;
-        if (p == null && (CFG().scheduledItem(name) || CFG().scheduledItem(mapped))) { cells.push('<td align="center" style="color:#9ca3af;" title="produs cu program">program</td>'); return; }
+        if (p == null && (CFG().scheduledItem(name) || CFG().scheduledItem(mapped) || CFG().scheduledTabs.includes(tab) || CFG().scheduledCategory(rowCat.cat))) { cells.push('<td align="center" style="color:#9ca3af;" title="produs cu program">program</td>'); return; }
         if (p == null) { cells.push(`<td align="center" style="color:${col.up};font-weight:700;">X</td>`); notes.push(`${platform(tab)}: lipsă`); bad = true; return; }
         const tag = (unreviewed ? ' <span style="color:#d97706;font-size:11px;" title="potrivire AI nerevizuită">≈</span>' : '') + (p.disc ? ` <span style="color:${col.ADDED};font-size:11px;">−${p.disc}%</span>` : '')
                   + (p.oos ? ` <span style="color:${col.REMOVED};font-size:11px;">epuizat</span>` : '');
@@ -222,12 +252,12 @@ function ownShopsReport() {
         if (Math.abs(d) > PRICE_TOLERANCE) { cells.push(`<td align="right" style="color:${d > 0 ? col.up : col.down};font-weight:700;">${p.list.toFixed(2)} (${d > 0 ? '+' : ''}${d.toFixed(2)})${tag}</td>`); notes.push(`${platform(tab)}: ${p.list.toFixed(2)} (${d > 0 ? '+' : ''}${d.toFixed(2)})`); bad = true; }
         else cells.push(`<td align="center" style="color:#9ca3af;">✓${sgr ? ' <span style="font-size:11px;">SGR</span>' : ''}${tag}</td>`);
       });
-      if (bad) issues.push({ ...catOf(row, name), name, html: `<tr><td>${esc(name)}</td><td align="right">${refP.toFixed(2)}</td>${cells.join('')}</tr>`,
+      if (bad) issues.push({ ...rowCat, name, html: `<tr><td>${esc(name)}</td><td align="right">${refP.toFixed(2)}</td>${cells.join('')}</tr>`,
         tg: `• ${tgEsc(name)} [${refP.toFixed(2)}] — ${tgEsc(notes.join(', '))}` });
     }
 
     // items on a platform that no master row points at → add them to the master tab, or delete them from the platform
-    tabs.forEach((tab, i) => Object.keys(prices[i]).filter(n => !mappedPerTab[i].has(n)).forEach(n => {
+    tabs.forEach((tab, i) => (r.noExtras || []).includes(tab) ? null : Object.keys(prices[i]).filter(n => !mappedPerTab[i].has(n)).forEach(n => {
       const p = prices[i][n];
       extras.push({ cat: p.cat || 'Altele', pos: p.pos, name: n, tab,
         html: `<tr><td>${esc(platform(tab))}</td><td>${esc(n)}</td><td align="right">${p.list.toFixed(2)}</td></tr>`,

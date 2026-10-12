@@ -36,7 +36,7 @@ const COMPETITORS = [
   { sheet: 'TheSmash - G', nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/the-smash-by-two-guys-brv' },
   { sheet: 'TheSmash - W', nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU',  url: 'https://wolt.com/en/rou/brasov/restaurant/smash-by-two-guys-67fd02d15c0da5b09cffb191' },
   { sheet: 'TheSmash - B', nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/138455-the-smash-by-two-guys/', midday: true },
-  // own Wolt virtual brands — TODO: 'Br. by Passage' and 'Br. by TwoGuys' share the same Wolt ID (…625); one URL is wrong
+  // own Wolt virtual brands (breakfast venues sell Wed–Fri 09–15 only; see scheduled_tabs / scheduled_categories in Settings)
   { sheet: 'Passage by TwoGuys - W', nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/en/rou/brasov/restaurant/passage-brasov-685661d3fed8b72a16338d89' },
   { sheet: 'Br. by Passage - W',     nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/breakfast-by-passage-67dac8fa3d53c71097395625' },
   { sheet: 'Br. by TwoGuys - W',     nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/breakfast-by-two-guys-67dac8fa3d53c71097395625' },
@@ -159,6 +159,8 @@ const SETTINGS_DEFAULTS = [
   ['collapse_after',       5,           'Peste atâtea produse ADĂUGATE/DELISTATE la același magazin → un singur rând în email'],
   ['ignore_items',         'Popular, Stoc epuizat', 'Produse ignorate complet (nume exacte, separate prin virgulă; termină cu * pentru "conține", ex. Sos*)'],
   ['scheduled_items',      '',          'Produse vândute doar în anumite zile (nume exacte sau cu * la final, ex. Steak Burger*): lipsa lor nu e raportată, nici la concurență, nici în magazinele proprii'],
+  ['scheduled_tabs',       'Br. by Passage - W, Br. by TwoGuys - W', 'Taburi cu meniu disponibil doar în anumite zile/ore: produsele lipsă nu sunt raportate'],
+  ['scheduled_categories', 'Mic dejun*, Breakfast*', 'Categorii disponibile doar în anumite zile/ore (ex. micul dejun miercuri–vineri 9–15): produsele lipsă nu sunt raportate'],
   ['muted_tabs',           '',          'Taburi urmărite în foaie dar lăsate afară din emailul zilnic (nume exacte, ex. Ramore - W, Dafud - B)'],
   ['priority_tabs',        '',          'Taburi afișate primele în email (nume exacte, separate prin virgulă)'],
   ['mass_rename_min',      10,          'Atâtea redenumiri deodată (și ≥50% din meniu) = schimbare de format → o singură linie'],
@@ -180,7 +182,7 @@ function CFG() {
   const num = (v, d) => isNaN(Number(v)) ? d : Number(v);
   const rules = s => list(s).map(x => x.endsWith('*') ? { has: x.slice(0, -1).toLowerCase() } : { is: x.toLowerCase() });
   const matches = (rs, name) => { const n = String(name).toLowerCase(); return rs.some(r => r.is ? n === r.is : n.includes(r.has)); };
-  const ignore = rules(raw.ignore_items), scheduled = rules(raw.scheduled_items);
+  const ignore = rules(raw.ignore_items), scheduled = rules(raw.scheduled_items), schedCats = rules(raw.scheduled_categories);
   _cfg = {
     alertEmail: list(raw.alert_email).join(',') || ALERT_EMAIL,
     ownEmail: list(raw.own_email).join(',') || ALERT_EMAIL,
@@ -192,6 +194,8 @@ function CFG() {
     collapseAfter: num(raw.collapse_after, 5),
     ignoreItem: name => matches(ignore, name),
     scheduledItem: name => matches(scheduled, name),      // sold only on some days: absence is normal
+    scheduledTabs: list(raw.scheduled_tabs),
+    scheduledCategory: cat => !!cat && matches(schedCats, cat),
     mutedTabs: list(raw.muted_tabs),
     priorityTabs: list(raw.priority_tabs),
     massRename: { min: num(raw.mass_rename_min, 10), share: 0.5 },
@@ -252,11 +256,11 @@ function dailyCheck() {
 
   // snapshot: Competitor | Key | Item | Price | Disc % | First seen | Missing
   // tabs without an ID column are keyed by cosmeticKey(name), so "OUĂ BENEDICT" and "Ouă Benedict" are the same item
-  const snapRows = snap.getLastRow() > 1 ? snap.getRange(2, 1, snap.getLastRow() - 1, 7).getValues() : [];
+  const snapRows = snap.getLastRow() > 1 ? snap.getRange(2, 1, snap.getLastRow() - 1, 8).getValues() : [];
   const old = {};
-  snapRows.forEach(([c, key, name, price, disc, first, miss]) => {
+  snapRows.forEach(([c, key, name, price, disc, first, miss, cat]) => {
     const k = idTabs.has(c) ? String(key) : cosmeticKey(name);
-    (old[c] = old[c] || {})[k] = { key: k, name: String(name), price, disc: Number(disc) || 0, first: ymd(first), miss: Number(miss) || 0 };
+    (old[c] = old[c] || {})[k] = { key: k, name: String(name), price, disc: Number(disc) || 0, first: ymd(first), miss: Number(miss) || 0, cat: String(cat || '') };
   });
 
   // recently delisted items, so a comeback is reported as RETURNED
@@ -276,7 +280,7 @@ function dailyCheck() {
     const last = sh.getLastRow();
     if (last < 2) { Logger.log(`❌ ${cfg.sheet}: tab is empty`); continue; }
     const col = c => last > 1 ? sh.getRange(`${c}2:${c}${last}`).getValues().flat() : [];
-    const names = col(cfg.nameCol), prices = col(cfg.priceCol), ids = cfg.idCol ? col(cfg.idCol) : [];
+    const names = col(cfg.nameCol), prices = col(cfg.priceCol), ids = cfg.idCol ? col(cfg.idCol) : [], cats = cfg.catCol ? col(cfg.catCol) : [];
 
     const origs = cfg.origCol ? col(cfg.origCol) : [];
     const cur = {};
@@ -288,16 +292,17 @@ function dailyCheck() {
       const list = (o > shown) ? o : shown;                       // real price
       const disc = list > shown ? Math.round((1 - shown / list) * 100) : 0;
       const key = cfg.idCol && ids[k] !== '' && ids[k] != null ? String(ids[k]) : cosmeticKey(name);
-      cur[key] = { key, name, price: list, shown, disc, first: (prev && prev[key] && prev[key].first) || today, miss: 0 };
+      cur[key] = { key, name, price: list, shown, disc, first: (prev && prev[key] && prev[key].first) || today, miss: 0, cat: String(cats[k] || '').trim() };
     });
     const count = Object.keys(cur).length;
     const errCount = prices.filter(p => typeof p === 'string' && p.startsWith('#')).length;
     const fetchErr = fetchStatus[cfg.sheet];
-    const failed = fetchErr || errCount > 0 || count === 0 || (prev && count < Object.keys(prev).length * 0.5);
+    const scheduledTab = F.scheduledTabs.includes(cfg.sheet);           // menu legitimately shrinks outside its hours
+    const failed = fetchErr || errCount > 0 || count === 0 || (!scheduledTab && prev && count < Object.keys(prev).length * 0.5);
 
     if (failed) {
       logRows.push([today, cfg.sheet, count, 'FETCH FAILED' + (fetchErr ? ` (${fetchErr})` : errCount ? ` (${errCount} error cells)` : '')]);
-      Object.values(prev || {}).forEach(r => newSnap.push([cfg.sheet, r.key, r.name, r.price, r.disc, r.first, r.miss]));
+      Object.values(prev || {}).forEach(r => newSnap.push([cfg.sheet, r.key, r.name, r.price, r.disc, r.first, r.miss, r.cat || '']));
       continue;
     }
 
@@ -336,7 +341,7 @@ function dailyCheck() {
       };
       const usedAdd = new Set();
       for (const o of missing) {
-        if (F.scheduledItem(o.name)) { newSnap.push([cfg.sheet, o.key, o.name, o.price, o.disc, o.first, 0]); continue; }   // off today by schedule
+        if (F.scheduledItem(o.name) || scheduledTab || F.scheduledCategory(o.cat)) { newSnap.push([cfg.sheet, o.key, o.name, o.price, o.disc, o.first, 0, o.cat]); continue; }   // off today by schedule
         let best = null, bestScore = 0;
         for (const a of added) {
           if (usedAdd.has(a.key) || !looksRenamed(o, a)) continue;
@@ -349,8 +354,9 @@ function dailyCheck() {
           else if (moved(round2(best.price - o.price), o.price)) push('PRICE_CHANGED', best.name, o.price, best.price);
           pushDisc(best.name, best, o);
           best.first = o.first;                                        // same product: keep its original first-seen date
+          if (!best.cat) best.cat = o.cat;
         } else if (o.miss + 1 < F.missingRuns) {
-          newSnap.push([cfg.sheet, o.key, o.name, o.price, o.disc, o.first, o.miss + 1]);   // pending, keep quietly
+          newSnap.push([cfg.sheet, o.key, o.name, o.price, o.disc, o.first, o.miss + 1, o.cat]);   // pending, keep quietly
         } else {
           push('REMOVED', `${o.name} (${daysSince(o.first)} zile)`, o.price, '');
           (gone[cfg.sheet] = gone[cfg.sheet] || {})[o.key] = { name: o.name, price: o.price, since: today };
@@ -374,7 +380,7 @@ function dailyCheck() {
       changes.push(...tabChanges);
       logRows.push([today, cfg.sheet, count, 'OK']);
     }
-    Object.values(cur).forEach(r => newSnap.push([cfg.sheet, r.key, r.name, r.price, r.disc, r.first, r.miss]));
+    Object.values(cur).forEach(r => newSnap.push([cfg.sheet, r.key, r.name, r.price, r.disc, r.first, r.miss, r.cat || '']));
   }
 
   // stale detection
@@ -391,9 +397,9 @@ function dailyCheck() {
 
   if (changes.length) rep.getRange(rep.getLastRow() + 1, 1, changes.length, 8).setValues(changes);
   log.getRange(log.getLastRow() + 1, 1, logRows.length, 4).setValues(logRows);
-  snap.getRange(1, 1, 1, 7).setValues([['Competitor', 'Key', 'Item', 'Price', 'Disc %', 'First seen', 'Missing']]);
-  if (snap.getLastRow() > 1) snap.getRange(2, 1, snap.getLastRow() - 1, 7).clearContent();
-  if (newSnap.length) snap.getRange(2, 1, newSnap.length, 7).setValues(newSnap);
+  snap.getRange(1, 1, 1, 8).setValues([['Competitor', 'Key', 'Item', 'Price', 'Disc %', 'First seen', 'Missing', 'Category']]);
+  if (snap.getLastRow() > 1) snap.getRange(2, 1, snap.getLastRow() - 1, 8).clearContent();
+  if (newSnap.length) snap.getRange(2, 1, newSnap.length, 8).setValues(newSnap);
   const hs = ss.getSheetByName(HISTORY_SHEET);
   if (hs && newSnap.length) {
     const histRows = newSnap.map(([c, key, name, price, disc]) => [today, c, name, price, disc || '']);
