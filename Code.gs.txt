@@ -153,6 +153,7 @@ const SETTINGS_DEFAULTS = [
   ['forget_removed_days',  60,          'Un produs delistat care revine în atâtea zile apare ca REVENIT, nu ADĂUGAT'],
   ['collapse_after',       5,           'Peste atâtea produse ADĂUGATE/DELISTATE la același magazin → un singur rând în email'],
   ['ignore_items',         'Popular, Stoc epuizat', 'Produse ignorate complet (nume exacte, separate prin virgulă; termină cu * pentru "conține", ex. Sos*)'],
+  ['scheduled_items',      '',          'Produse vândute doar în anumite zile (nume exacte sau cu * la final, ex. Steak Burger*): lipsa lor nu e raportată, nici la concurență, nici în magazinele proprii'],
   ['muted_tabs',           '',          'Taburi urmărite în foaie dar lăsate afară din emailul zilnic (nume exacte, ex. Ramore - W, Dafud - B)'],
   ['priority_tabs',        '',          'Taburi afișate primele în email (nume exacte, separate prin virgulă)'],
   ['mass_rename_min',      10,          'Atâtea redenumiri deodată (și ≥50% din meniu) = schimbare de format → o singură linie'],
@@ -172,7 +173,9 @@ function CFG() {
   }
   const list = s => String(s || '').split(',').map(x => x.trim()).filter(Boolean);
   const num = (v, d) => isNaN(Number(v)) ? d : Number(v);
-  const ignore = list(raw.ignore_items).map(x => x.endsWith('*') ? { has: x.slice(0, -1).toLowerCase() } : { is: x.toLowerCase() });
+  const rules = s => list(s).map(x => x.endsWith('*') ? { has: x.slice(0, -1).toLowerCase() } : { is: x.toLowerCase() });
+  const matches = (rs, name) => { const n = String(name).toLowerCase(); return rs.some(r => r.is ? n === r.is : n.includes(r.has)); };
+  const ignore = rules(raw.ignore_items), scheduled = rules(raw.scheduled_items);
   _cfg = {
     alertEmail: list(raw.alert_email).join(',') || ALERT_EMAIL,
     ownEmail: list(raw.own_email).join(',') || ALERT_EMAIL,
@@ -182,7 +185,8 @@ function CFG() {
     minDiffPct: num(raw.min_diff_pct, 0) / 100,
     forgetRemovedDays: num(raw.forget_removed_days, 60),
     collapseAfter: num(raw.collapse_after, 5),
-    ignoreItem: name => { const n = name.toLowerCase(); return ignore.some(r => r.is ? n === r.is : n.includes(r.has)); },
+    ignoreItem: name => matches(ignore, name),
+    scheduledItem: name => matches(scheduled, name),      // sold only on some days: absence is normal
     mutedTabs: list(raw.muted_tabs),
     priorityTabs: list(raw.priority_tabs),
     massRename: { min: num(raw.mass_rename_min, 10), share: 0.5 },
@@ -327,6 +331,7 @@ function dailyCheck() {
       };
       const usedAdd = new Set();
       for (const o of missing) {
+        if (F.scheduledItem(o.name)) { newSnap.push([cfg.sheet, o.key, o.name, o.price, o.disc, o.first, 0]); continue; }   // off today by schedule
         let best = null, bestScore = 0;
         for (const a of added) {
           if (usedAdd.has(a.key) || !looksRenamed(o, a)) continue;

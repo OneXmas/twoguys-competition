@@ -212,6 +212,7 @@ function ownShopsReport() {
         if (mapped === '-') { cells.push('<td align="center" style="color:#9ca3af;">n/a</td>'); return; }
         if (mapped) mappedPerTab[i].add(mapped);
         const p = mapped ? prices[i][mapped] : undefined;
+        if (p == null && (CFG().scheduledItem(name) || CFG().scheduledItem(mapped))) { cells.push('<td align="center" style="color:#9ca3af;" title="produs cu program">program</td>'); return; }
         if (p == null) { cells.push(`<td align="center" style="color:${col.up};font-weight:700;">X</td>`); notes.push(`${platform(tab)}: lipsă`); bad = true; return; }
         const tag = (unreviewed ? ' <span style="color:#d97706;font-size:11px;" title="potrivire AI nerevizuită">≈</span>' : '') + (p.disc ? ` <span style="color:${col.ADDED};font-size:11px;">−${p.disc}%</span>` : '')
                   + (p.oos ? ` <span style="color:${col.REMOVED};font-size:11px;">epuizat</span>` : '');
