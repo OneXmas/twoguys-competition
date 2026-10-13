@@ -45,3 +45,10 @@ Delivery prices are intentionally higher than home/pick-up prices (platform comm
 - Master tabs rebuilt: rebuildDeliveryMasters (Glovo names/list prices + Wolt/Bolt-only rows) and rebuildHomeMaster (Burgerbrasov + fuzzy/AI-matched Mypassage, "-" = not sold for pick-up). AI matched all but 2 Home rows (user fixed). Report grouped by category; ≈ = unreviewed AI match.
 - Decisions: master = Glovo list price, Wolt/Bolt being aligned to it by the user; Bolt-only items should be on all platforms; Mypassage is a subset of Burgerbrasov.
 - Still open: out-of-stock-on-one-platform check, near-name typo check, Wolt/Glovo meta (rating/fee), hourly check, telegram_own back to da when noise is acceptable.
+
+## 2026-10-13
+
+- Schedules corrected: breakfast Wed–Sun 09:00–15:00 (not Wed–Fri); Steak Burger Fri–Sun.
+- Master tabs are now self-maintaining for names: when a platform renames a product (e.g. Bolt "Pepsi Doza 330ml" → "Pepsi 330ml"), the master cell follows it (close name, or same price + similar name); blanks are fuzzy-filled each run. Listed in the email under "Nume actualizate automat".
+- Off-schedule products get their category from _Snapshot so they show "program" instead of X.
+- Glovo promo: the badge Glovo shows (e.g. -10%) is stored in column E of Glovo tabs and used instead of our own rounding (Glovo prices give 9.4%).

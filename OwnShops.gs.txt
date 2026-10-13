@@ -202,14 +202,51 @@ function rebuildMasterFrom(mapName, baseTab) {
 // Breakfast master: run on a Wednesday–Friday between 10:00 and 15:00 (after the 10:00 dailyCheck has refreshed the Wolt tabs).
 function rebuildBreakfastMaster() { rebuildMasterFrom('Breakfast', 'Br. by Passage - W'); }
 
+// Self-maintaining master: when a platform renames a product, the master cell that pointed at the old name follows it;
+// blank cells are filled the same way buildRefSheets does. Returns true if any cell changed. Nothing is ever removed.
+function syncMasterNames(r, rows, tabs, tabIdx, prices, renamed) {
+  let changed = false;
+  tabs.forEach((tab, i) => {
+    const c = tabIdx[i], pool = Object.keys(prices[i]);
+    const used = new Set(rows.map(row => String(row[c] || '').replace(/^[~≈]/, '').trim()).filter(Boolean));
+    for (const row of rows) {
+      const name = String(row[0]).trim(); if (!name) continue;
+      const raw = String(row[c] || '').trim(), mapped = raw.replace(/^[~≈]/, '').trim();
+      if (mapped === '-' || (mapped && prices[i][mapped])) continue;              // n/a or still valid
+      if (mapped && CFG().scheduledItem(mapped)) continue;                         // off today by schedule, not renamed
+      const base = Number(row[1]), ref = mapped || name;                           // match against the old platform name, else our name
+      let best = '', bestScore = 0;
+      for (const cand of pool) {
+        if (used.has(cand)) continue;
+        if (cosmeticKey(cand) === cosmeticKey(ref)) { best = cand; bestScore = 1; break; }
+        const p = prices[i][cand].list;
+        if (base && p && (p / base < MAP_PRICE_BAND[0] || p / base > MAP_PRICE_BAND[1])) continue;
+        const qa = qtyOf(ref), qb = qtyOf(cand);
+        if (qa.length && qb.length && qa.join() !== qb.join()) continue;
+        const s = similarity(mapNorm(ref), mapNorm(cand));
+        if (s > bestScore) { bestScore = s; best = cand; }
+      }
+      // replacing a known name needs a close match — unless the candidate has exactly the master price (± SGR on Bolt)
+      const samePrice = best && base && Math.abs(prices[i][best].list - base) <= PRICE_TOLERANCE + (SGR_TABS.includes(tab) ? SGR : 0);
+      const need = mapped && !samePrice ? RENAME_THRESHOLD : MAP_THRESHOLD;
+      if (best && bestScore >= need) {
+        if (mapped) renamed.push({ map: r.map, tab, from: mapped, to: best });
+        row[c] = best; used.add(best); changed = true;
+      }
+    }
+  });
+  return changed;
+}
+
 function ownShopsReport() {
   const ss = SpreadsheetApp.getActive(), today = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
   const listPrices = tab => {                       // name -> { list price (discount ignored), disc, oos, cat, pos }
     const cfg = COMPETITORS.find(c => c.sheet === tab), sh = ss.getSheetByName(tab), m = {};
     if (!cfg || !sh || sh.getLastRow() < 2) return m;
     const last = sh.getLastRow(), col = c => c ? sh.getRange(`${c}2:${c}${last}`).getValues().flat() : [];
-    const n = col(cfg.nameCol), p = col(cfg.priceCol), o = col(cfg.origCol), st = col(cfg.stockCol), ct = col(cfg.catCol);
-    n.forEach((x, i) => { const s = Number(p[i]), org = Number(o[i]); if (x && s > 0) m[String(x).trim()] = { list: org > s ? org : s, disc: org > s ? Math.round((1 - s / org) * 100) : 0, oos: /epuizat/i.test(st[i] || ''), cat: String(ct[i] || '').trim(), pos: i }; });
+    const n = col(cfg.nameCol), p = col(cfg.priceCol), o = col(cfg.origCol), st = col(cfg.stockCol), ct = col(cfg.catCol), pr = col(cfg.promoCol);
+    n.forEach((x, i) => { const s = Number(p[i]), org = Number(o[i]), badge = parseInt(String(pr[i] || '').replace(/[^\d]/g, ''), 10);
+      if (x && s > 0) m[String(x).trim()] = { list: org > s ? org : s, disc: org > s ? (badge > 0 ? badge : Math.round((1 - s / org) * 100)) : 0, oos: /epuizat/i.test(st[i] || ''), cat: String(ct[i] || '').trim(), pos: i }; });
     return m;
   };
   const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -217,19 +254,26 @@ function ownShopsReport() {
   const platform = tab => displayName(tab).replace(/.* - /, '');
   let html = '', total = 0;
   const tg = [];                                    // plain-text lines for Telegram
+  // categories remembered by the daily snapshot, so a product that is off today (breakfast, weekend-only) still has one
+  const snapCat = {};
+  const snap = ss.getSheetByName(SNAP_SHEET);
+  if (snap && snap.getLastRow() > 1) snap.getRange(2, 1, snap.getLastRow() - 1, 8).getValues().forEach(r => { if (r[7]) (snapCat[r[0]] = snapCat[r[0]] || {})[String(r[2]).trim()] = String(r[7]); });
+  const renamed = [];                               // master cells updated automatically this run
 
   for (const r of OWN_REPORTS) {
     const map = ss.getSheetByName(r.map); if (!map || map.getLastRow() < 2) continue;
     const headers = map.getRange(1, 1, 1, map.getLastColumn()).getValues()[0].map(String).filter(Boolean);
     const tabs = headers.filter(h => COMPETITORS.some(c => c.sheet === h));
     const tabIdx = tabs.map(t => headers.indexOf(t));
-    const rows = map.getRange(2, 1, map.getLastRow() - 1, headers.length).getValues();
+    const rowsRange = map.getRange(2, 1, map.getLastRow() - 1, headers.length), rows = rowsRange.getValues();
     const prices = tabs.map(listPrices);
+    if (syncMasterNames(r, rows, tabs, tabIdx, prices, renamed)) rowsRange.setValues(rows);   // platform renamed a product → follow it
     const mappedPerTab = tabs.map(() => new Set());
     const issues = [], extras = [];                 // { cat, pos, name, html, tg }
     // category of a master row = category on the first platform where it is mapped; fallback: "CAT | Name" prefix in the master name
     const catOf = (row, name) => {
       for (let i = 0; i < tabs.length; i++) { const p = prices[i][String(row[tabIdx[i]] || '').trim()]; if (p && p.cat) return { cat: p.cat, pos: p.pos }; }
+      for (let i = 0; i < tabs.length; i++) { const c = (snapCat[tabs[i]] || {})[String(row[tabIdx[i]] || '').replace(/^[~≈]/, '').trim()]; if (c) return { cat: c, pos: 9000 }; }
       const m = name.match(/^([^|]+)\|/); return { cat: m ? m[1].trim() : 'Altele', pos: 9999 };
     };
 
@@ -284,7 +328,10 @@ function ownShopsReport() {
       <table width="100%" cellpadding="6" cellspacing="0" style="border:1px solid #e5e7eb;font-size:13px;"><tr style="background:${col.headerBg};color:#fff;"><th align="left">Platformă</th><th align="left">Produs</th><th align="right">Preț</th></tr>${withHeaders(extras, 3, x => x.html)}</table>` : '';
     if (!issues.length && !extras.length) html += `<p style="font-size:13px;color:${col.ADDED};">✓ Totul în ordine</p>`;
   }
-  if (!total) return;
+  if (renamed.length) html += `<div style="font-size:13px;font-weight:700;margin:18px 0 4px;color:#6b7280;">Nume actualizate automat în lista master (platforma a redenumit produsul):</div>
+      <table width="100%" cellpadding="6" cellspacing="0" style="border:1px solid #e5e7eb;font-size:13px;"><tr style="background:${col.headerBg};color:#fff;"><th align="left">Tab</th><th align="left">Platformă</th><th align="left">Vechi</th><th align="left">Nou</th></tr>
+      ${renamed.map(x => `<tr><td>${esc(x.map)}</td><td>${esc(platform(x.tab))}</td><td>${esc(x.from)}</td><td>${esc(x.to)}</td></tr>`).join('')}</table>`;
+  if (!total && !renamed.length) return;
   if (CFG().telegramOwn) tgSend(`🏪 <b>Magazine proprii: ${total} probleme</b> (${today})\n` + tg.join('\n'));
   const body = `<div style="background:#f3f4f6;padding:20px 8px;font-family:Arial,sans-serif;"><div style="max-width:720px;margin:0 auto;background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;">
     <div style="height:5px;background:${col.accent};"></div><div style="padding:20px;text-align:center;border-bottom:1px solid #e5e7eb;"><div style="font-size:18px;font-weight:800;">Verificare magazine proprii</div><div style="font-size:13px;color:#6b7280;">${today} · X = lipsă · preț afișat = diferit de lista master</div></div>

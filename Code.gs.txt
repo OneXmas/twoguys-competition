@@ -30,10 +30,10 @@ const COMPETITORS = [
   { sheet: 'Burgerbrasov', nameCol: 'A', priceCol: 'B', fn: 'SITE_MENU', url: 'https://burgerbrasov.ro/' },
   { sheet: 'Mypassage',    nameCol: 'A', priceCol: 'B', idCol: 'D', origCol: 'E', catCol: 'C', fn: 'WOO_MENU', url: 'https://mypassage.ro' },
   // own platforms
-  { sheet: 'TwoGuys - G',  nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/two-guys-delivery' },
+  { sheet: 'TwoGuys - G',  nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/two-guys-delivery' },
   { sheet: 'TwoGuys - W',  nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU',  url: 'https://wolt.com/ro/rou/brasov/restaurant/two-guys-delivery-67dac8fa3d53c71097395624' },
   { sheet: 'TwoGuys - B',  nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/110855-two-guys-delivery/', midday: true },
-  { sheet: 'TheSmash - G', nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/the-smash-by-two-guys-brv' },
+  { sheet: 'TheSmash - G', nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/the-smash-by-two-guys-brv' },
   { sheet: 'TheSmash - W', nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU',  url: 'https://wolt.com/en/rou/brasov/restaurant/smash-by-two-guys-67fd02d15c0da5b09cffb191' },
   { sheet: 'TheSmash - B', nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/138455-the-smash-by-two-guys/', midday: true },
   // own Wolt virtual brands (breakfast venues sell Wed–Fri 09–15 only; see scheduled_tabs / scheduled_categories in Settings)
@@ -46,15 +46,15 @@ const COMPETITORS = [
   { sheet: 'Vivo',         nameCol: 'C', priceCol: 'D', idCol: 'B', catCol: 'A', fn: 'FB_MENU', url: '708b7ab6-4386-4db4-a15e-2b22d785b925' },
   { sheet: 'Marcos',       nameCol: 'A', priceCol: 'B', catCol: 'C', fn: 'JSONLD_MENU', url: 'https://marcosburgers.ro/meniu' },
   // competitors – Glovo
-  { sheet: 'Kronburger - G',                  nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/kronburger-brv' },
-  { sheet: 'Kronburger Smoker and Grill - G', nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/kronburger-smoker-and-grill-brv' },
-  { sheet: 'Egg&Smash - G',                   nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/egg-smash-house-brv' },
-  { sheet: 'Vivo - G',                        nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/vivo-brv' },
-  { sheet: 'Smash by Vivo - G',               nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/smash-by-vivo-brv' },
-  { sheet: 'Marcos - G',                      nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/marcos-brv' },
-  { sheet: 'Dafud - G',                       nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/d-fud-dudes-food-truck-brv-1' },
-  { sheet: 'Old Jack - G',                    nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/old-jack-burger-house-br' },
-  { sheet: 'Justinn Burger Store - G',        nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/justinn-burgers-brv' },
+  { sheet: 'Kronburger - G',                  nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/kronburger-brv' },
+  { sheet: 'Kronburger Smoker and Grill - G', nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/kronburger-smoker-and-grill-brv' },
+  { sheet: 'Egg&Smash - G',                   nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/egg-smash-house-brv' },
+  { sheet: 'Vivo - G',                        nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/vivo-brv' },
+  { sheet: 'Smash by Vivo - G',               nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/smash-by-vivo-brv' },
+  { sheet: 'Marcos - G',                      nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/marcos-brv' },
+  { sheet: 'Dafud - G',                       nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/d-fud-dudes-food-truck-brv-1' },
+  { sheet: 'Old Jack - G',                    nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/old-jack-burger-house-br' },
+  { sheet: 'Justinn Burger Store - G',        nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/justinn-burgers-brv' },
   // competitors – Wolt
   { sheet: 'Buffaloeat - W', nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/buffalo-eat-bartolomeu-6a1803da2131a0a22c74ade3' },
   { sheet: 'Kronburger - W', nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/kronburger-smoker-grill-68f795b430c473d5f5db545f' },
@@ -285,7 +285,7 @@ function dailyCheck() {
     const last = sh.getLastRow();
     if (last < 2) { Logger.log(`❌ ${cfg.sheet}: tab is empty`); continue; }
     const col = c => last > 1 ? sh.getRange(`${c}2:${c}${last}`).getValues().flat() : [];
-    const names = col(cfg.nameCol), prices = col(cfg.priceCol), ids = cfg.idCol ? col(cfg.idCol) : [], cats = cfg.catCol ? col(cfg.catCol) : [];
+    const names = col(cfg.nameCol), prices = col(cfg.priceCol), ids = cfg.idCol ? col(cfg.idCol) : [], cats = cfg.catCol ? col(cfg.catCol) : [], promos = cfg.promoCol ? col(cfg.promoCol) : [];
 
     const origs = cfg.origCol ? col(cfg.origCol) : [];
     const cur = {};
@@ -295,7 +295,8 @@ function dailyCheck() {
       if (!name || F.ignoreItem(name) || isNaN(shown) || shown <= 0) return;
       const o = Number(origs[k]);
       const list = (o > shown) ? o : shown;                       // real price
-      const disc = list > shown ? Math.round((1 - shown / list) * 100) : 0;
+      const badge = parseInt(String(promos[k] || '').replace(/[^\d]/g, ''), 10);
+      const disc = list > shown ? (badge > 0 ? badge : Math.round((1 - shown / list) * 100)) : 0;   // platform badge wins over our own rounding
       const key = cfg.idCol && ids[k] !== '' && ids[k] != null ? String(ids[k]) : cosmeticKey(name);
       cur[key] = { key, name, price: list, shown, disc, first: (prev && prev[key] && prev[key].first) || today, miss: 0, cat: String(cats[k] || '').trim() };
     });
@@ -518,14 +519,15 @@ function GLOVO_MENU(storeUrl) {
     headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36' }
   }).getContentText();
   const num = t => parseFloat(t.replace(/[^\d,]/g, '').replace(',', '.'));
-  const rows = [['Section', 'Item', 'Price', 'Original price']];
+  const rows = [['Section', 'Item', 'Price', 'Original price', 'Promo']];
   const re = /List_title__\w+"[^>]*>([^<]+)<\/h3>|ItemRow_titleContainer__\w+"><p[^>]*>([^<]+)<\/p>[\s\S]*?ItemRow_priceContainer__\w+">(.*?)<\/div>/g;
   let section = '', m;
   while ((m = re.exec(html)) !== null) {
     if (m[1]) { section = m[1]; continue; }
     const spans = [...m[3].matchAll(/<span[^>]*>([^<]+)<\/span>/g)].map(x => x[1]);
     const price = num(spans[0] || ''), orig = spans[1] ? num(spans[1]) : '';
-    rows.push([section, m[2].trim(), price, orig]);
+    const promo = (m[0].match(/ItemRow_tagsContainer[\s\S]*?(-\d+%)/) || [])[1] || '';   // Glovo's own badge, e.g. -10% (its prices round differently)
+    rows.push([section, m[2].trim(), price, orig, promo]);
   }
   LAST_META = glovoMeta(html);
   return rows.length > 1 ? rows : 'NO ITEMS – check URL or blocked';
