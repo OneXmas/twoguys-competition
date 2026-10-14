@@ -52,3 +52,10 @@ Delivery prices are intentionally higher than home/pick-up prices (platform comm
 - Master tabs are now self-maintaining for names: when a platform renames a product (e.g. Bolt "Pepsi Doza 330ml" → "Pepsi 330ml"), the master cell follows it (close name, or same price + similar name); blanks are fuzzy-filled each run. Listed in the email under "Nume actualizate automat".
 - Off-schedule products get their category from _Snapshot so they show "program" instead of X.
 - Glovo promo: the badge Glovo shows (e.g. -10%) is stored in column E of Glovo tabs and used instead of our own rounding (Glovo prices give 9.4%).
+
+## 2026-10-14
+
+- Decision: one price per product on all platforms (e.g. Combo Two Guys 94 everywhere); master A/B are the reference name and price, edited by hand; the report flags price AND name differences ("nume: …" tag) so they can be fixed in each platform admin. glovo_offset idea dropped.
+- Breakfast tab built (23 rows). Passage by TwoGuys on Wolt has no breakfast category for now (Wolt-side problem) — keep it in Report D, expect X there until fixed.
+- Promo badge stored as number; -0.3 cells tolerated. Late renames (new name added days before the old one disappeared) now reported as RENAMED.
+- Next: out-of-stock-on-one-platform check (Bolt known; check Wolt), then hourly check only if needed.
