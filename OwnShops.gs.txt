@@ -327,7 +327,7 @@ function ownShopsReport() {
     total += issues.length + extras.length;
     if (issues.length || extras.length) tg.push(`\n<b>${tgEsc(r.name)}</b>`, ...tgWithHeaders(issues));
     if (extras.length) tg.push(`<i>Pe platformă dar nu în „${tgEsc(r.map)}”:</i>`, ...extras.map(x => x.tg));
-    html += `<div style="font-size:15px;font-weight:700;margin:18px 0 6px;">${esc(r.name)} <span style="font-weight:400;color:#6b7280;font-size:13px;">— ${issues.length} probleme${nameDiffs ? ` (din care ${nameDiffs} nume diferite)` : ''}, ${extras.length} produse în plus</span></div>`;
+    html += `<div style="font-size:15px;font-weight:700;margin:18px 0 6px;">${esc(r.name)} <span style="font-weight:400;color:#6b7280;font-size:13px;">— ${issues.length} probleme${nameDiffs ? `, ${nameDiffs} nume diferite` : ''}, ${extras.length} produse în plus</span></div>`;
     html += issues.length ? `<table width="100%" cellpadding="6" cellspacing="0" style="border:1px solid #e5e7eb;font-size:13px;">
       <tr style="background:${col.headerBg};color:#fff;"><th align="left">Produs</th><th align="right">Preț ref.</th>${tabs.map(h => `<th>${esc(platform(h))}</th>`).join('')}</tr>${withHeaders(issues, tabs.length + 2, x => x.html)}</table>` : '';
     html += extras.length ? `<div style="font-size:13px;font-weight:700;margin:10px 0 4px;color:#6b7280;">Pe platformă dar nu în lista master — de verificat tabul „${esc(r.map)}” din fișier:</div>
