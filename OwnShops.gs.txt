@@ -283,7 +283,7 @@ function ownShopsReport() {
     for (const row of rows) {
       const name = String(row[0]).trim(), refP = Number(row[1]);
       if (!name || !(refP > 0)) continue;
-      const cells = [], notes = [], rowCat = catOf(row, name); let bad = false;
+      const cells = [], notes = [], rowCat = catOf(row, name), oosOn = [], stockOn = []; let bad = false;
       tabs.forEach((tab, i) => {
         const raw = String(row[tabIdx[i]] || '').trim(), unreviewed = /^[~≈]/.test(raw), mapped = raw.replace(/^[~≈]/, '').trim();
         if (mapped === '-') { cells.push('<td align="center" style="color:#9ca3af;">n/a</td>'); return; }
@@ -291,6 +291,7 @@ function ownShopsReport() {
         const p = mapped ? prices[i][mapped] : undefined;
         if (p == null && (CFG().scheduledItem(name) || CFG().scheduledItem(mapped) || CFG().scheduledTabs.includes(tab) || CFG().scheduledCategory(rowCat.cat))) { cells.push('<td align="center" style="color:#9ca3af;" title="produs cu program">program</td>'); return; }
         if (p == null) { cells.push(`<td align="center" style="color:${col.up};font-weight:700;">X</td>`); notes.push(`${platform(tab)}: lipsă`); bad = true; return; }
+        (p.oos ? oosOn : stockOn).push(tab);
         const tag = (unreviewed ? ' <span style="color:#d97706;font-size:11px;" title="potrivire AI nerevizuită">≈</span>' : '') + (p.disc ? ` <span style="color:${col.ADDED};font-size:11px;">−${p.disc}%</span>` : '')
                   + (p.oos ? ` <span style="color:${col.REMOVED};font-size:11px;">epuizat</span>` : '');
         const nameDiff = cosmeticKey(mapped) !== cosmeticKey(name);
@@ -302,6 +303,7 @@ function ownShopsReport() {
         if (Math.abs(d) > PRICE_TOLERANCE) { cells.push(`<td align="right" style="color:${d > 0 ? col.up : col.down};font-weight:700;">${p.list.toFixed(2)} (${d > 0 ? '+' : ''}${d.toFixed(2)})${tag}${nameTag}</td>`); notes.push(`${platform(tab)}: ${p.list.toFixed(2)} (${d > 0 ? '+' : ''}${d.toFixed(2)})`); bad = true; }
         else cells.push(`<td align="center" style="color:#9ca3af;">✓${sgr ? ' <span style="font-size:11px;">SGR</span>' : ''}${tag}${nameTag}</td>`);
       });
+      if (oosOn.length && stockOn.length) { bad = true; notes.push(...oosOn.map(t => `${platform(t)}: epuizat`)); }   // sold out here, orderable elsewhere
       if (bad) issues.push({ ...rowCat, name, html: `<tr><td>${esc(name)}</td><td align="right">${refP.toFixed(2)}</td>${cells.join('')}</tr>`,
         tg: `• ${tgEsc(name)} [${refP.toFixed(2)}] — ${tgEsc(notes.join(', '))}` });
     }
@@ -340,7 +342,7 @@ function ownShopsReport() {
   if (!total && !renamed.length) return;
   if (CFG().telegramOwn) tgSend(`🏪 <b>Magazine proprii: ${total} probleme</b> (${today})\n` + tg.join('\n'));
   const body = `<div style="background:#f3f4f6;padding:20px 8px;font-family:Arial,sans-serif;"><div style="max-width:720px;margin:0 auto;background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;">
-    <div style="height:5px;background:${col.accent};"></div><div style="padding:20px;text-align:center;border-bottom:1px solid #e5e7eb;"><div style="font-size:18px;font-weight:800;">Verificare magazine proprii</div><div style="font-size:13px;color:#6b7280;">${today} · X = lipsă · preț afișat = diferit de lista master · „nume:” = produsul e pe platformă cu alt nume decât în lista master</div></div>
+    <div style="height:5px;background:${col.accent};"></div><div style="padding:20px;text-align:center;border-bottom:1px solid #e5e7eb;"><div style="font-size:18px;font-weight:800;">Verificare magazine proprii</div><div style="font-size:13px;color:#6b7280;">${today} · X = lipsă · preț afișat = diferit de lista master · „nume:” = alt nume pe platformă · „epuizat” = oprit pe o platformă dar activ pe celelalte</div></div>
     <div style="padding:4px 20px 20px;">${html}</div><div style="height:5px;background:${col.accent};"></div></div></div>`;
   MailApp.sendEmail({ to: CFG().ownEmail, subject: `🏪 Magazine proprii: ${total} probleme (${today})`, htmlBody: body });
 }

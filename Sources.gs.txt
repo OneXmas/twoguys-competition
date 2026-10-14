@@ -141,12 +141,13 @@ function WOLT_MENU(venueUrl) {
   const d = JSON.parse(res.getContentText());
   const catOf = {};
   d.categories.forEach(c => (c.item_ids || []).forEach(id => catOf[id] = c.name));
-  const rows = [['Item', 'Price', 'Category', 'ID']];
+  const rows = [['Item', 'Price', 'Category', 'ID', 'Stoc', 'Original price']];
   const seen = {};
   d.items.forEach(it => { const n = it.name.trim(); seen[n] = (seen[n] || 0) + 1; });
   d.items.forEach(it => {
     const n = it.name.trim(), cat = catOf[it.id] || '';
-    rows.push([seen[n] > 1 && cat ? `${n} (${cat})` : n, it.price / 100, cat, it.id]);
+    const orig = it.original_price && it.original_price > it.price ? it.original_price / 100 : '';
+    rows.push([seen[n] > 1 && cat ? `${n} (${cat})` : n, it.price / 100, cat, it.id, it.disabled_info ? 'epuizat' : '', orig]);   // disabled_info = sold out / unavailable
   });
   LAST_META = woltMeta(venueUrl);
   return rows;
