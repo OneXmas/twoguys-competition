@@ -295,7 +295,7 @@ function dailyCheck() {
       if (!name || F.ignoreItem(name) || isNaN(shown) || shown <= 0) return;
       const o = Number(origs[k]);
       const list = (o > shown) ? o : shown;                       // real price
-      const badge = parseInt(String(promos[k] || '').replace(/[^\d]/g, ''), 10);
+      const badge = promoPct(promos[k]);
       const disc = list > shown ? (badge > 0 ? badge : Math.round((1 - shown / list) * 100)) : 0;   // platform badge wins over our own rounding
       const key = cfg.idCol && ids[k] !== '' && ids[k] != null ? String(ids[k]) : cosmeticKey(name);
       cur[key] = { key, name, price: list, shown, disc, first: (prev && prev[key] && prev[key].first) || today, miss: 0, cat: String(cats[k] || '').trim() };
@@ -346,6 +346,7 @@ function dailyCheck() {
         return (x.includes(y) || y.includes(x)) && Math.abs(a.price - o.price) <= Math.max(1, o.price * 0.1);
       };
       const usedAdd = new Set();
+      let twin;
       for (const o of missing) {
         if (F.scheduledItem(o.name) || scheduledTab || F.scheduledCategory(o.cat)) { newSnap.push([cfg.sheet, o.key, o.name, o.price, o.disc, o.first, 0, o.cat]); continue; }   // off today by schedule
         let best = null, bestScore = 0;
@@ -361,6 +362,10 @@ function dailyCheck() {
           pushDisc(best.name, best, o);
           best.first = o.first;                                        // same product: keep its original first-seen date
           if (!best.cat) best.cat = o.cat;
+        } else if (o.miss + 1 >= F.missingRuns && (twin = Object.values(cur).find(a => a.key !== o.key && a.first >= o.first && looksRenamed(o, a)))) {
+          // about to be removed, but a newer product with a matching name and price exists → it was renamed days ago
+          if (cosmeticKey(o.name) !== cosmeticKey(twin.name)) push('RENAMED', `${o.name} → ${twin.name}`, o.price, twin.price);
+          twin.first = o.first;
         } else if (o.miss + 1 < F.missingRuns) {
           newSnap.push([cfg.sheet, o.key, o.name, o.price, o.disc, o.first, o.miss + 1, o.cat]);   // pending, keep quietly
         } else {
@@ -519,7 +524,7 @@ function GLOVO_MENU(storeUrl) {
     headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36' }
   }).getContentText();
   const num = t => parseFloat(t.replace(/[^\d,]/g, '').replace(',', '.'));
-  const rows = [['Section', 'Item', 'Price', 'Original price', 'Promo']];
+  const rows = [['Section', 'Item', 'Price', 'Original price', 'Promo %']];
   const re = /List_title__\w+"[^>]*>([^<]+)<\/h3>|ItemRow_titleContainer__\w+"><p[^>]*>([^<]+)<\/p>[\s\S]*?ItemRow_priceContainer__\w+">(.*?)<\/div>/g;
   let section = '', m;
   while ((m = re.exec(html)) !== null) {
@@ -527,7 +532,7 @@ function GLOVO_MENU(storeUrl) {
     const spans = [...m[3].matchAll(/<span[^>]*>([^<]+)<\/span>/g)].map(x => x[1]);
     const price = num(spans[0] || ''), orig = spans[1] ? num(spans[1]) : '';
     const promo = (m[0].match(/ItemRow_tagsContainer[\s\S]*?(-\d+%)/) || [])[1] || '';   // Glovo's own badge, e.g. -10% (its prices round differently)
-    rows.push([section, m[2].trim(), price, orig, promo]);
+    rows.push([section, m[2].trim(), price, orig, promo ? parseInt(promo.replace(/[^\d]/g, ''), 10) : '']);   // plain number (30): a '-30%' text becomes -0.3 in the sheet
   }
   LAST_META = glovoMeta(html);
   return rows.length > 1 ? rows : 'NO ITEMS – check URL or blocked';
@@ -587,6 +592,14 @@ const MAP_PRICE_BAND = [0.6, 1.8];
 
 
 
+
+// promo badge as stored in a tab: 30, '-30%', or -0.3 (when the sheet turned '-30%' into a percentage cell) → 30
+function promoPct(v) {
+  if (v === '' || v == null) return 0;
+  if (typeof v === 'number') return Math.round(Math.abs(v) <= 1 ? Math.abs(v) * 100 : Math.abs(v));
+  const n = parseInt(String(v).replace(/[^\d]/g, ''), 10);
+  return n > 0 ? n : 0;
+}
 
 function decode(t) {
   return String(t).replace(/&#(\d+);/g, (_, n) => String.fromCharCode(n)).replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))

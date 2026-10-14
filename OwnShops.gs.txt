@@ -245,7 +245,7 @@ function ownShopsReport() {
     if (!cfg || !sh || sh.getLastRow() < 2) return m;
     const last = sh.getLastRow(), col = c => c ? sh.getRange(`${c}2:${c}${last}`).getValues().flat() : [];
     const n = col(cfg.nameCol), p = col(cfg.priceCol), o = col(cfg.origCol), st = col(cfg.stockCol), ct = col(cfg.catCol), pr = col(cfg.promoCol);
-    n.forEach((x, i) => { const s = Number(p[i]), org = Number(o[i]), badge = parseInt(String(pr[i] || '').replace(/[^\d]/g, ''), 10);
+    n.forEach((x, i) => { const s = Number(p[i]), org = Number(o[i]), badge = promoPct(pr[i]);
       if (x && s > 0) m[String(x).trim()] = { list: org > s ? org : s, disc: org > s ? (badge > 0 ? badge : Math.round((1 - s / org) * 100)) : 0, oos: /epuizat/i.test(st[i] || ''), cat: String(ct[i] || '').trim(), pos: i }; });
     return m;
   };
