@@ -59,3 +59,5 @@ Delivery prices are intentionally higher than home/pick-up prices (platform comm
 - Breakfast tab built (23 rows). Passage by TwoGuys on Wolt has no breakfast category for now (Wolt-side problem) — keep it in Report D, expect X there until fixed.
 - Promo badge stored as number; -0.3 cells tolerated. Late renames (new name added days before the old one disappeared) now reported as RENAMED.
 - Next: out-of-stock-on-one-platform check (Bolt known; check Wolt), then hourly check only if needed.
+
+- 2026-10-14 (later): out-of-stock check live (Bolt + Wolt disabled_info; Glovo marker unknown until an item is sold out there). Wolt tabs now carry Stoc (E) and Original price (F). Name-difference flag kept for Report B too; Wolt "Noi" column kept. All three files deployed.
