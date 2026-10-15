@@ -238,6 +238,11 @@ function cosmeticKey(s) {
     .replace(/[^a-z0-9]+/g, ' ').replace(/(\d) (ml|l|g|gr|kg|cl|buc)\b/g, '$1$2').replace(/(\d)gr\b/g, '$1g').trim();
 }
 
+// cosmeticKey without quantities (330ml, 0.5l, 6 buc, 250g); empty if nothing but a quantity is left
+function sizeFreeKey(s) {
+  return cosmeticKey(s).replace(/\b\d+(ml|l|g|kg|cl|buc)\b/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 function ensureHeader(sh, headers) {
   if (String(sh.getRange(1, 1).getValue()) === headers[0]) return;
   sh.insertRowBefore(1);
@@ -342,6 +347,9 @@ function dailyCheck() {
       // rename = a missing item and a new item that look alike: similar name, or one name contains the other at (almost) the same price
       const looksRenamed = (o, a) => {
         if (similarity(normName(o.name), normName(a.name)) >= RENAME_THRESHOLD) return true;
+        // only the size changed ("Corona 355ml" → "Corona 330ml"): same name without quantities, price in the same ballpark
+        const bo = sizeFreeKey(o.name);
+        if (bo && bo === sizeFreeKey(a.name) && Math.abs(a.price - o.price) <= Math.max(2, o.price * 0.25)) return true;
         const x = ` ${cosmeticKey(o.name)} `, y = ` ${cosmeticKey(a.name)} `;
         return (x.includes(y) || y.includes(x)) && Math.abs(a.price - o.price) <= Math.max(1, o.price * 0.1);
       };
