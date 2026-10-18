@@ -108,12 +108,12 @@ function SITE_MENU(url) {
   if (res.getResponseCode() !== 200) return 'HTTP ' + res.getResponseCode();
   const html = res.getContentText();
   const strip = t => t.replace(/<[^>]+>/g, '').replace(/&nbsp;|\u00a0/g, ' ').replace(/&amp;/g, '&').replace(/&#8211;|&#8217;/g, "'").replace(/\s+/g, ' ').trim();
-  const rows = [['Item', 'Price', 'Source']];
+  const rows = [['Item', 'Price']];
 
   // 1. catalogue items
   const cat = /av-catalogue-title'>([\s\S]*?)<\/div>\s*<div class='av-catalogue-price'>([\s\S]*?)<\/div>/g;
   let m;
-  while ((m = cat.exec(html)) !== null) rows.push([strip(m[1]), parseFloat(strip(m[2]).replace(',', '.')), 'catalog']);
+  while ((m = cat.exec(html)) !== null) rows.push([strip(m[1]), parseFloat(strip(m[2]).replace(',', '.'))]);
 
   // 2. featured items: any <h3>NAME</h3> followed by <h4>Label: price</h4> / <h4>price</h4> before the next <h3>
   const parts = html.split(/<h3\b[^>]*>/).slice(1);
@@ -125,7 +125,7 @@ function SITE_MENU(url) {
       const mm = t.match(/^(?:([^:]+):\s*)?(\d+(?:[.,]\d+)?)\s*(lei|ron)?$/i);
       if (!mm) continue;
       const label = mm[1] ? mm[1].trim() : '';
-      rows.push([label && label.toLowerCase() !== 'burger' ? `${name} ${label}` : name, parseFloat(mm[2].replace(',', '.')), 'featured']);
+      rows.push([label && label.toLowerCase() !== 'burger' ? `${name} ${label}` : name, parseFloat(mm[2].replace(',', '.'))]);
     }
   }
   return rows.length > 1 ? rows : 'NO ITEMS';

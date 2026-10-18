@@ -32,32 +32,46 @@ function priceOf(ss, tab) {
   return m;
 }
 
-function prefillSheet(sheetName, marker) {
+function prefillSheet(sheetName, marker, onlyNew) {       // onlyNew: fuzzy-fill just the columns added by this call
   const ss = SpreadsheetApp.getActive();
   const map = ss.getSheetByName(sheetName);
   let headers = map.getRange(1, 1, 1, map.getLastColumn()).getValues()[0].map(String).filter(Boolean);
+  const hadColumn = new Set(headers);
 
   // CompMap: make sure every competitor has a column
   if (sheetName === COMPMAP_SHEET) {
     COMPETITORS.map(c => c.sheet).filter(t => !OWN_CHANNELS.includes(t) && t.toLowerCase() !== 'burgerbrasov' && !headers.includes(t))
-      .forEach(t => { headers.push(t); map.getRange(1, headers.length).setValue(t); });
+      .forEach(t => {
+        headers.push(t);
+        if (map.getMaxColumns() < headers.length) map.insertColumnsAfter(map.getMaxColumns(), headers.length - map.getMaxColumns());
+        map.getRange(1, headers.length).setValue(t);
+      });
   }
 
   const prices = headers.map(t => priceOf(ss, t));
   const namesOf = tab => Object.keys(prices[headers.indexOf(tab)]);
-  const site = namesOf(headers[0]);
+  // CompMap: column A = all our products (site + masters); Map (legacy): the tab named in its first header
+  const ownList = sheetName === COMPMAP_SHEET ? ownProducts() : null;
+  const ownPrice = {}; if (ownList) ownList.forEach(p => ownPrice[cosmeticKey(p.name)] = p.price);
+  const site = ownList || namesOf(headers[0]).map(name => ({ name }));
   const existing = map.getLastRow() > 1 ? map.getRange(2, 1, map.getLastRow() - 1, headers.length).getValues() : [];
   const rows = existing.map(r => r.map(String));
-  const known = new Set(rows.map(r => r[0]));
-  site.forEach(n => { if (!known.has(n)) rows.push([n, ...headers.slice(1).map(() => '')]); });
+  const known = new Set(rows.map(r => cosmeticKey(r[0]))), knownKey = new Set(rows.map(r => ownKey_(r[0])));
+  site.forEach(p => {
+    const cos = cosmeticKey(p.name), key = ownKey_(p.name);
+    if (known.has(cos) || (ownList && !p.noMerge && knownKey.has(key))) return;
+    known.add(cos); knownKey.add(key);
+    rows.push([p.name, ...headers.slice(1).map(() => '')]);
+  });
 
   headers.slice(1).forEach((tab, ci) => {
+    if (onlyNew && hadColumn.has(tab)) return;
     const c = ci + 1, pool = namesOf(tab);
     const used = new Set(rows.map(r => r[c].replace(/^~/, '')).filter(Boolean));
     for (const r of rows) {
       if (r[c]) continue;
       let best = '', bestScore = 0;
-      const a = mapNorm(r[0]), base = prices[0][r[0]];
+      const a = mapNorm(r[0]), base = ownList ? ownPrice[cosmeticKey(r[0])] : prices[0][r[0]];
       for (const cand of pool) {
         if (used.has(cand)) continue;
         const p = prices[c][cand];
@@ -74,8 +88,112 @@ function prefillSheet(sheetName, marker) {
   map.getRange(2, 1, rows.length, headers.length).setValues(rows);
 }
 
+// ===== OUR PRODUCT LIST (CompMap column A) =====
+// Where our products come from, in priority order (the first source that has a product gives its price). Column A is always the
+// name; price = column number of the price; type/typeIs = only rows whose column `type` equals `typeIs` count.
+// Add { tab: 'Breakfast', price: 2 } to benchmark breakfast items too.
+const COMPMAP_OWN_SOURCES = [
+  { tab: 'Burgerbrasov',     price: 2 },                                                  // restaurant site: A name, B price
+  { tab: 'MASTER Twoguys',   price: 3, type: 15, typeIs: 'Produs din lista' },            // Mypassage list: A name, C price, O row type
+  { tab: 'TwoGuys Home',     price: 2 },                                                  // master tabs: A name, B reference price
+  { tab: 'TwoGuys Delivery', price: 2 },
+  { tab: 'Smash Delivery',   price: 2, noMerge: true },                                  // a different brand: never folded into a TwoGuys product
+];
+
+// same product, different spelling across our shops ("Two Guys" on the site, "Two Guys Burger" on Mypassage): same name without
+// filler words and the same quantities ("330ml") = same product
+function ownKey_(name) { return mapNorm(name) + '|' + qtyOf(name).join(','); }
+
+// Every product of ours worth comparing with the market: [{ name, price, src }], each product once (spelling variants merged into
+// the first source's name). out.merged lists the variants that were folded in.
+function ownProducts() {
+  const ss = SpreadsheetApp.getActive(), F = CFG(), out = [], seenCos = new Set(), seenKey = new Set();
+  out.merged = [];
+  const add = (name, price, src, noMerge) => {
+    name = String(name || '').replace(/[\s ]+/g, ' ').trim();
+    const cos = cosmeticKey(name);
+    if (!name || !cos || F.ignoreItem(name) || seenCos.has(cos)) return;
+    seenCos.add(cos);
+    const key = ownKey_(name);
+    if (!noMerge && seenKey.has(key)) { out.merged.push(`${name} (${src})`); return; }
+    seenKey.add(key);
+    out.push({ name, price: Number(price) > 0 ? Number(price) : '', src, noMerge: !!noMerge });
+  };
+  COMPMAP_OWN_SOURCES.forEach(s => {
+    const sh = ss.getSheetByName(s.tab);
+    if (!sh || sh.getLastRow() < 2) return;
+    const width = Math.min(sh.getLastColumn(), Math.max(2, s.price, s.type || 0));
+    sh.getRange(2, 1, sh.getLastRow() - 1, width).getValues().forEach(r => {
+      if (s.type && r[s.type - 1] !== s.typeIs) return;
+      add(r[0], r[s.price - 1], s.tab, s.noMerge);
+    });
+  });
+  return out;
+}
+
+// Adds to CompMap column A every product of ours that is not there yet (competitor cells empty). Never deletes or edits a name;
+// rows stay sorted A→Z. Safe to re-run. Run it after a new product appears on the site or on a master tab.
+function syncCompMapProducts() {
+  const ss = SpreadsheetApp.getActive(), cm = ss.getSheetByName(COMPMAP_SHEET);
+  const width = cm.getLastColumn();
+  const existing = cm.getLastRow() > 1 ? cm.getRange(2, 1, cm.getLastRow() - 1, width).getValues().map(r => r.map(String)).filter(r => r.some(Boolean)) : [];
+  const haveCos = new Set(existing.map(r => cosmeticKey(r[0])).filter(Boolean)), haveKey = new Set(existing.map(r => ownKey_(r[0])));
+  const own = ownProducts();
+  const isVariant = p => !p.noMerge && haveKey.has(ownKey_(p.name));          // same product as an existing row, other spelling
+  const fresh = own.filter(p => !haveCos.has(cosmeticKey(p.name)) && !isVariant(p));
+  const variants = own.filter(p => !haveCos.has(cosmeticKey(p.name)) && isVariant(p)).map(p => `${p.name} (${p.src})`).concat(own.merged);
+  const bySrc = {}; fresh.forEach(p => bySrc[p.src] = (bySrc[p.src] || 0) + 1);
+  if (variants.length) Logger.log(`Not added, same product as an existing row under another spelling (${variants.length}): ${variants.slice(0, 20).join('; ')}`);
+  const rows = existing.concat(fresh.map(p => [p.name, ...Array(width - 1).fill('')])).sort((a, b) => a[0].localeCompare(b[0]));
+  if (cm.getMaxRows() < rows.length + 1) cm.insertRowsAfter(cm.getMaxRows(), rows.length + 1 - cm.getMaxRows());
+  cm.getRange(1, 1).setValue('Produs');                       // was "BurgerBrasov": the column now holds all our shops
+  cm.getRange(2, 1, Math.max(cm.getLastRow() - 1, 1), width).clearContent();
+  if (rows.length) cm.getRange(2, 1, rows.length, width).setValues(rows);
+  Logger.log(`CompMap: ${fresh.length} products added (${Object.entries(bySrc).map(([s, n]) => s + ' ' + n).join(', ') || 'none'}), ${rows.length} in total`);
+}
+
+// Read-only checkup: shows in the log which CompMap / MatchMatrix steps are done and which are still to run. Changes nothing.
+function compMapStatus() {
+  const ss = SpreadsheetApp.getActive(), cm = ss.getSheetByName(COMPMAP_SHEET), mx = ss.getSheetByName(MATRIX_SHEET);
+  const headers = cm.getRange(1, 1, 1, cm.getLastColumn()).getValues()[0].map(String).filter(Boolean);
+  const rows = cm.getLastRow() > 1 ? cm.getRange(2, 1, cm.getLastRow() - 1, headers.length).getValues().map(r => r.map(String)).filter(r => r[0]) : [];
+  const L = [];
+  const ownCols = headers.filter((h, i) => i > 0 && OWN_CHANNELS.includes(h));
+  L.push(ownCols.length ? `TO DO  removeOwnCompMapColumns - own shops still in CompMap: ${ownCols.join(', ')}` : 'done   own-shop columns removed from CompMap');
+  const compTabs = COMPETITORS.map(c => c.sheet).filter(t => !OWN_CHANNELS.includes(t) && t.toLowerCase() !== 'burgerbrasov');
+  const noCol = compTabs.filter(t => !headers.includes(t));
+  L.push(noCol.length ? `TO DO  prefillCompMap - competitor columns missing: ${noCol.join(', ')}` : `done   all ${compTabs.length} competitor columns exist`);
+  const haveCos = new Set(rows.map(r => cosmeticKey(r[0]))), haveKey = new Set(rows.map(r => ownKey_(r[0])));
+  const missing = ownProducts().filter(p => !haveCos.has(cosmeticKey(p.name)) && (p.noMerge || !haveKey.has(ownKey_(p.name))));
+  L.push(missing.length ? `TO DO  syncCompMapProducts - ${missing.length} of our products are not in column A (e.g. ${missing.slice(0, 5).map(p => p.name).join('; ')})` : `done   column A has all our products (${rows.length} rows)`);
+  L.push(headers[0] === 'Produs' ? 'done   cell A1 = Produs' : `info   cell A1 = "${headers[0]}" (syncCompMapProducts renames it to Produs)`);
+  let confirmed = 0, tilde = 0, approx = 0, blank = 0, none = 0;
+  rows.forEach(r => r.slice(1).forEach(v => { if (!v) blank++; else if (v === '-') none++; else if (v[0] === '~') tilde++; else if (v[0] === '≈') approx++; else confirmed++; }));
+  L.push(`info   CompMap cells: ${confirmed} confirmed, ${tilde} fuzzy (~), ${approx} AI (≈), ${none} no equivalent (-), ${blank} still empty (llmFillCompMap asks the AI for these)`);
+  const mh = mx && mx.getLastColumn() ? mx.getRange(1, 1, 1, mx.getLastColumn()).getValues()[0].map(String) : [];
+  const notInMx = headers.slice(1).filter(h => !mh.includes(h)), extraInMx = mh.filter(h => h && OWN_CHANNELS.includes(h));
+  L.push(notInMx.length || extraInMx.length ? `TO DO  buildMatrix - MatchMatrix lacks: ${notInMx.join(', ') || '-'}; still has own shops: ${extraInMx.join(', ') || '-'}` : 'done   MatchMatrix has the same competitor columns as CompMap');
+  const bb = ss.getSheetByName('Burgerbrasov'), mp = ss.getSheetByName('Mypassage');
+  L.push(bb && String(bb.getRange(1, 3).getValue()) === 'Source' ? 'TO DO  delete column C ("Source") in tab Burgerbrasov' : 'done   Burgerbrasov has no Source column');
+  L.push(mp && String(mp.getRange(1, 6).getValue()) === 'Disc %' ? 'TO DO  delete column F ("Disc %") in tab Mypassage' : 'done   Mypassage has no Disc % column');
+  Logger.log('\n' + L.join('\n'));
+}
+
 function prefillMap()     { prefillSheet(MAP_SHEET, ''); }
 function prefillCompMap() { prefillSheet(COMPMAP_SHEET, '~'); }
+
+// Adds a CompMap column for every competitor tab that has none yet (own shops are never added) and fuzzy-fills ONLY those new columns.
+function prefillCompMapNew() { prefillSheet(COMPMAP_SHEET, '~', true); }
+
+// One-time: our own shops (TwoGuys, TheSmash, Burgerbrasov, Mypassage...) are not "the market". Deletes their columns from CompMap.
+function removeOwnCompMapColumns() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(COMPMAP_SHEET);
+  const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+  const del = [];
+  headers.forEach((h, i) => { if (i > 0 && OWN_CHANNELS.includes(h)) del.push(i + 1); });
+  del.reverse().forEach(c => sh.deleteColumn(c));                         // right to left, so the numbers stay valid
+  Logger.log(`CompMap: removed ${del.length} own-shop columns: ${del.map(c => headers[c - 1]).reverse().join(', ') || '-'}`);
+}
 
 function clearSuspiciousMap() {
   const ss = SpreadsheetApp.getActive(), map = ss.getSheetByName(MAP_SHEET);
@@ -95,23 +213,34 @@ function clearSuspiciousMap() {
   Logger.log(`Cleared ${cleared} suspicious mappings`);
 }
 
-function llmFillCompMap() {
+// The four competitor tabs that were missing from CompMap / MatchMatrix (added 2026-10-18)
+const COMPMAP_NEW_TABS = ['Kronburger Smoker and Grill - G', 'Smash by Vivo - G', 'Justinn Burger Store - G', 'Romanian Burger - B'];
+function llmFillCompMapNew() { llmFillCompMap(COMPMAP_NEW_TABS); }
+
+function llmFillCompMap(onlyTabs) {                      // onlyTabs: optional list of competitor tabs; default = every column
   const ss = SpreadsheetApp.getActive();
   const key = PropertiesService.getScriptProperties().getProperty('ANTHROPIC_KEY');
   if (!key) throw new Error('Set ANTHROPIC_KEY in Script properties');
   const map = ss.getSheetByName(COMPMAP_SHEET);
   const headers = map.getRange(1, 1, 1, map.getLastColumn()).getValues()[0].map(String).filter(Boolean);
   const rng = map.getRange(2, 1, map.getLastRow() - 1, headers.length), rows = rng.getValues().map(r => r.map(String));
-  const ours = priceOf(ss, headers[0]);
+  const ours = {}; ownProducts().forEach(p => ours[cosmeticKey(p.name)] = p.price);      // our price per product, whichever shop it is from
 
+  // The AI answers about BATCH of our items at a time (a long list would not fit in one answer). "No equivalent" is written as "-"
+  // so the cell is not asked again; a cell left blank (bad answer) is retried on the next run. Apps Script stops after 6 min:
+  // when the time is up the rest is left for the next run, which continues where this one stopped.
+  const BATCH = 80, t0 = Date.now(), skipped = [];
   headers.slice(1).forEach((tab, ci) => {
-    const c = ci + 1;
-    const blanks = rows.filter(r => r[0] && !r[c]);
-    if (!blanks.length) return;
-    const theirs = priceOf(ss, tab);
+    if (Array.isArray(onlyTabs) && !onlyTabs.includes(tab)) return;
+    const c = ci + 1, theirs = priceOf(ss, tab), tried = new Set();
+    while (true) {
+    if (Date.now() - t0 > 270000) { skipped.push(tab); break; }
+    const blanks = rows.filter(r => r[0] && !r[c] && !tried.has(r)).slice(0, BATCH);
+    if (!blanks.length) break;
+    blanks.forEach(r => tried.add(r));
     const taken = new Set(rows.map(r => r[c].replace(/^[~≈]/, '')).filter(Boolean));
     const candidates = Object.entries(theirs).filter(([n]) => !taken.has(n));
-    if (!candidates.length) return;
+    if (!candidates.length) break;
 
     const prompt = `You match restaurant menu items between two Romanian burger restaurants for price comparison.
 Match by PRODUCT EQUIVALENCE (same category and role on the menu), not identical recipe:
@@ -122,7 +251,7 @@ Match by PRODUCT EQUIVALENCE (same category and role on the menu), not identical
 Each competitor item may be used at most once.
 
 OUR items (name | price RON):
-${blanks.map(r => `${r[0]} | ${ours[r[0]] || '?'}`).join('\n')}
+${blanks.map(r => `${r[0]} | ${ours[cosmeticKey(r[0])] || '?'}`).join('\n')}
 
 COMPETITOR "${tab}" items (name | price RON):
 ${candidates.map(([n, p]) => `${n} | ${p}`).join('\n')}
@@ -135,27 +264,32 @@ Respond with ONLY a JSON object, no prose, no markdown: {"<our item>": "<competi
         res = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
           method: 'post', contentType: 'application/json', muteHttpExceptions: true,
           headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-          payload: JSON.stringify({ model: LLM_MODEL, max_tokens: 4000, messages: [{ role: 'user', content: prompt }] })
+          payload: JSON.stringify({ model: LLM_MODEL, max_tokens: 6000, messages: [{ role: 'user', content: prompt }] })
         });
         if (res.getResponseCode() < 500) break;
-      } catch (e) { if (attempt === 3) { Logger.log(`${tab}: network error ${e.message}`); return; } }
+      } catch (e) { if (attempt === 3) { Logger.log(`${tab}: network error ${e.message}`); res = null; } }
       Utilities.sleep(2000 * attempt);
     }
+    if (!res) break;
     const body = JSON.parse(res.getContentText());
-    if (res.getResponseCode() !== 200 || !body.content) { Logger.log(`${tab}: API ${res.getResponseCode()} ${res.getContentText().slice(0, 300)}`); return; }
+    if (res.getResponseCode() !== 200 || !body.content) { Logger.log(`${tab}: API ${res.getResponseCode()} ${res.getContentText().slice(0, 300)}`); break; }
     const text = body.content.map(b => b.text || '').join('');
-    let out; try { out = JSON.parse(text.replace(/```json|```/g, '').trim()); } catch (e) { Logger.log(`${tab}: bad JSON: ${text.slice(0, 200)}`); return; }
+    let out; try { out = JSON.parse(text.replace(/```json|```/g, '').trim()); } catch (e) { Logger.log(`${tab}: bad JSON: ${text.slice(0, 200)}`); continue; }
 
     const valid = new Set(candidates.map(([n]) => n)), used = new Set();
-    let filled = 0;
-    rows.forEach(r => {
+    let filled = 0, none = 0;
+    blanks.forEach(r => {
+      if (!Object.prototype.hasOwnProperty.call(out, r[0])) return;   // not answered: stays blank, retried next run
       const v = out[r[0]];
-      if (r[c] || !v || !valid.has(v) || used.has(v)) return;   // only blanks, only real names, no reuse
+      if (v === null) { r[c] = '-'; none++; return; }                 // the AI found no equivalent
+      if (!valid.has(v) || used.has(v)) return;                       // only real names, no reuse
       r[c] = LLM_MARKER + v; used.add(v); filled++;
     });
-    Logger.log(`${tab}: ${filled} suggestions for ${blanks.length} blanks`);
+    Logger.log(`${tab}: ${filled} suggestions, ${none} no equivalent, for ${blanks.length} blanks`);
+    }
   });
   rng.setValues(rows);
+  if (skipped.length) Logger.log('Time limit reached, not done yet (run llmFillCompMap again): ' + skipped.join(', '));
 }
 
 

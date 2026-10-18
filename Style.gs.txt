@@ -1,0 +1,157 @@
+// Style.gs : formatting for the "MASTER Twoguys" tab. Changes only the look (and the header row / dropdown lists), never the product data.
+// Safe to run again after every data change: the colours the guard gives to users' entries (Settings, column Culoare) are kept.
+// Names start with ST_ so they do not clash with the guard script's constants.
+//
+// Columns (A..O):
+//   A Denumire produs | B Categorie | C Pret Mypassage | D WP ID | E Descriere | F Gramaj | G Alergeni | H kcal
+//   I Fisier webp | J Latime x Inaltime | K KB | L Dimensiune OK (1200x800) | M Stare imagine | N Nota | O Tip rand
+const ST_SHEET = 'MASTER Twoguys';
+const ST = {
+  bg: '#0E1317', text: '#F2E5D3', orange: '#FF8A00', tan: '#C19977',
+  headA: '#1D3A36',   // your list: A-C, E-H
+  headB: '#3A2C14',   // shop / images: D, I-O
+  line: '#26333A',
+  okBg: '#1D3A36', okFg: '#B1D595',
+  warnBg: '#3A2A10', warnFg: '#FF8A00',
+  badBg: '#3A1A1A', badFg: '#FF7B7B',
+  extraBg: '#161C22'
+};
+const ST_HEADERS = ['Denumire produs', 'Categorie', 'Pret Mypassage', 'WP ID', 'Descriere', 'Gramaj', 'Alergeni', 'kcal',
+  'Fisier webp', 'Latime x Inaltime', 'KB', 'Dimensiune OK (1200x800)', 'Stare imagine', 'Nota', 'Tip rand'];
+const ST_COLS = ST_HEADERS.length;   // 15 = A..O
+const C_CAT = 2, C_DIMOK = 12, C_STARE = 13, C_NOTA = 14, C_TIP = 15;
+const ST_USE_FILTER = false; // true = also put a regular filter on the header row (hides while a filter view is open)
+
+// Older versions of the tab had two extra header cells (M1 "KB", N1 "Dimensiune OK") that the data does not have, so every
+// label after L sat two columns to the right of its data. If that pattern is found, the header row is rewritten.
+function styleFixHeader_(sh) {
+  const h = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), ST_COLS)).getValues()[0].map(String);
+  if (!(h[12] === 'KB' && h[14] === 'Stare imagine')) return false;      // already correct (or something else: leave it alone)
+  sh.getRange(1, 1, 1, h.length).clearContent();
+  sh.getRange(1, 1, 1, ST_COLS).setValues([ST_HEADERS]);
+  return true;
+}
+
+function styleMypassage() {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(ST_SHEET);
+  const headerFixed = styleFixHeader_(sh);
+  const lastRow = sh.getLastRow(), maxRows = sh.getMaxRows();
+  const all = sh.getRange(1, 1, maxRows, ST_COLS);          // whole tab incl. the empty rows where users type new products
+
+  // remember the cells the guard coloured, to put the colour back after the base look
+  const guardColors = new Set(Object.values(acRead_().colors).concat(AC_DEFAULT_COLOR).map(c => String(c).toLowerCase()));
+  const oldBg = all.getBackgrounds();
+
+  // 1. base look
+  sh.setHiddenGridlines(true);
+  all.setBackground(ST.bg).setFontColor(ST.text).setFontFamily('Arial').setFontSize(10)
+     .setFontStyle('normal').setFontWeight('normal')
+     .setVerticalAlignment('middle').setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
+  sh.setRowHeightsForced(1, maxRows, 26);
+  all.setBorder(false, false, true, false, false, false, ST.line, SpreadsheetApp.BorderStyle.SOLID);
+
+  // 2. header: two tints, yours (A-C, E-H) and from the shop / images (D, I-O)
+  const head = sh.getRange(1, 1, 1, ST_COLS);
+  head.setFontColor(ST.orange).setFontWeight('bold').setHorizontalAlignment('left').setWrap(true);
+  sh.getRange(1, 1, 1, ST_COLS).setBackground(ST.headB);
+  sh.getRange(1, 1, 1, 3).setBackground(ST.headA);
+  sh.getRange(1, 5, 1, 4).setBackground(ST.headA);
+  sh.setRowHeight(1, 36);
+  sh.setFrozenRows(1);
+  sh.setFrozenColumns(1);
+
+  // 3. widths (A..O)
+  [260, 110, 100, 80, 300, 140, 90, 60, 260, 120, 60, 130, 230, 330, 150]
+    .forEach((w, i) => sh.setColumnWidth(i + 1, w));
+
+  // 4. numbers centred (Pret, WP ID, kcal, Latime x Inaltime, KB, Dimensiune OK)
+  [3, 4, 8, 10, 11, 12].forEach(c => sh.getRange(1, c, maxRows, 1).setHorizontalAlignment('center'));
+
+  // 5. separator line when the category changes; extra rows (not "Produs din lista") get their own darker band
+  const tip = sh.getRange(1, C_TIP, lastRow, 1).getValues().map(r => r[0]);
+  const cat = sh.getRange(1, C_CAT, lastRow, 1).getValues().map(r => r[0]);
+  let firstExtra = 0;
+  for (let r = 2; r <= lastRow; r++) {
+    const mine = tip[r - 1] === 'Produs din lista';
+    if (mine && r > 2 && cat[r - 1] !== cat[r - 2]) {
+      sh.getRange(r, 1, 1, ST_COLS).setBorder(true, false, null, false, false, false, ST.tan, SpreadsheetApp.BorderStyle.SOLID);
+    }
+    if (!mine && tip[r - 1] !== '') {
+      if (!firstExtra) firstExtra = r;
+      sh.getRange(r, 1, 1, ST_COLS).setBackground(ST.extraBg).setFontStyle('italic');
+    }
+  }
+  if (firstExtra) sh.getRange(firstExtra, 1, 1, ST_COLS).setBorder(true, false, null, false, false, false, ST.orange, SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+
+  // 5b. put the guard colours back (one write for the whole range)
+  all.setBackgrounds(all.getBackgrounds().map((row, i) => row.map((c, j) => guardColors.has(oldBg[i][j]) ? oldBg[i][j] : c)));
+
+  // 6. status colours (conditional formatting; replaces rules already on this tab)
+  const rule = (range, build) => build(SpreadsheetApp.newConditionalFormatRule().setRanges([range])).build();
+  const rows = maxRows - 1;
+  const stare = sh.getRange(2, C_STARE, rows, 1), dimOk = sh.getRange(2, C_DIMOK, rows, 1), nota = sh.getRange(2, C_NOTA, rows, 1);
+  sh.setConditionalFormatRules([
+    rule(stare, b => b.whenTextStartsWith('OK').setBackground(ST.okBg).setFontColor(ST.okFg)),
+    rule(stare, b => b.whenTextContains('REFACUT').setBackground(ST.warnBg).setFontColor(ST.warnFg)),
+    rule(stare, b => b.whenTextContains('FARA').setBackground(ST.badBg).setFontColor(ST.badFg)),
+    rule(dimOk, b => b.whenTextEqualTo('DA').setFontColor(ST.okFg)),
+    rule(dimOk, b => b.whenTextEqualTo('NU').setBackground(ST.badBg).setFontColor(ST.badFg)),
+    rule(nota, b => b.whenCellNotEmpty().setFontColor(ST.warnFg))
+  ]);
+
+  // 7. dropdowns: first remove every old list on the tab (they sat on the old column positions), then set the right ones
+  //    (warning only, so a free note is still possible)
+  sh.getRange(2, 1, rows, sh.getMaxColumns()).clearDataValidations();
+  const dd = (range, list) => range.setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(true).build());
+  dd(stare, ['OK', 'OK (imagine inlocuita prin Media Library)', 'DE REFACUT (dimensiune)', 'FARA IMAGINE NOUA', 'FISIER FARA PRODUS']);
+  dd(dimOk, ['DA', 'NU']);
+  dd(sh.getRange(2, C_TIP, rows, 1), ['Produs din lista', 'Produs doar in WP', 'Fisier fara produs']);
+
+  // 8. regular filter on the header row: off by default (use Data > Filter views instead; set ST_USE_FILTER = true to switch it on)
+  const old = sh.getFilter();
+  if (old) old.remove();
+  if (ST_USE_FILTER) sh.getRange(1, 1, lastRow, ST_COLS).createFilter();
+
+  // 9. short notes on the header cells, so nobody has to guess what a column is for
+  sh.getRange(1, 1, 1, ST_COLS).clearNote();
+  const notes = {
+    D1: 'ID-ul produsului in WooCommerce. Nu se schimba. Cu el facem importul de imagini / preturi.',
+    I1: 'Fisierul .webp de pe server: /wp-content/uploads/product-images/. Numele = nume-produs-cu-liniute, fara diacritice.',
+    J1: 'Dimensiunea masurata pe server. Standard: 1200 x 800 px.',
+    M1: 'OK = totul in regula. DE REFACUT = alta dimensiune. FARA IMAGINE / FISIER FARA PRODUS = de lucrat.',
+    N1: 'Observatii: nume diferit in WP, pret diferit, imagine duplicata etc.',
+    O1: 'Produs din lista = in lista ta. Produs doar in WP = in magazin, nu in lista. Fisier fara produs = imagine pe server, neatasata.'
+  };
+  Object.keys(notes).forEach(a => sh.getRange(a).setNote(notes[a]));
+
+  // the header row was rewritten: the guard's copy of it must follow
+  if (headerFixed && typeof refreshSnapshots === 'function') refreshSnapshots();
+}
+
+// Optional: a small "Cum se foloseste" tab with the legend (does not touch the product tab).
+function addLegendTab() {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName('Cum se foloseste') || ss.insertSheet('Cum se foloseste');
+  sh.clear();
+  const rows = [
+    ['Cum se foloseste foaia MASTER Twoguys', ''],
+    ['', ''],
+    ['Coloane A-C, E-H', 'Lista ta de produse (denumire, categorie, pret, descriere, gramaj, alergeni, kcal).'],
+    ['Coloana D + I-O', 'Date din magazin si imagini: ID-ul din WP, fisierul webp, dimensiunea, starea, nota, tipul randului.'],
+    ['Verde (OK)', 'Imaginea e pusa si are dimensiunea corecta.'],
+    ['Portocaliu (DE REFACUT)', 'Imaginea nu are 1200 x 800 px: se refac din original.'],
+    ['Rosu (FARA IMAGINE / FISIER FARA PRODUS)', 'Produsul nu are imagine, sau imaginea nu e atasata niciunui produs.'],
+    ['Randuri mai jos, intunecate', 'Produse doar in WP si fisiere fara produs: de lucrat sau de sters.'],
+    ['', ''],
+    ['Reguli', 'Fiecare utilizator are acces doar la taburile si coloanele din Settings. Celulele care au deja valoare le schimba doar adminul; ceilalti completeaza doar celulele goale (culoarea arata cine a completat; revine la normal daca valoarea e adusa inapoi).'],
+    ['Imagine noua', 'Schimba numele din coloana "Fisier webp" si spune-mi: generez importul (ID + Imagini).'],
+    ['Randuri / coloane noi', 'Le adauga doar adminul; snapshot-ul se actualizeaza singur. Daca un script a scris in tab: meniul Acces > Reimprospateaza snapshot-urile.']
+  ];
+  sh.getRange(1, 1, rows.length, 2).setValues(rows);
+  sh.setColumnWidth(1, 330); sh.setColumnWidth(2, 640);
+  sh.setHiddenGridlines(true);
+  sh.getRange(1, 1, rows.length, 2).setBackground(ST.bg).setFontColor(ST.text).setFontFamily('Arial').setVerticalAlignment('middle').setWrap(true);
+  sh.getRange('A1').setFontColor(ST.orange).setFontWeight('bold').setFontSize(13);
+  sh.getRange(3, 1, rows.length - 2, 1).setFontColor(ST.tan).setFontWeight('bold');
+}

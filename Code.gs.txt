@@ -467,8 +467,11 @@ function buildMatrix() {
   mx.getRange(1, 1, 1, header.length).setValues([header]).setFontWeight('bold');
 
   const f = [];
+  // our price: the site first, then the master tabs (name in A, reference price in B) for products that are not on the site
+  const ourPrice = COMPMAP_OWN_SOURCES.slice().reverse()
+    .reduce((inner, s) => `IFERROR(VLOOKUP($A2:$A; '${s.tab}'!A:${String.fromCharCode(64 + s.price)}; ${s.price}; FALSE); ${inner})`, '""');
   f.push(['=FILTER(CompMap!A2:A; CompMap!A2:A<>"")',
-          '=ARRAYFORMULA(IF($A2:$A=""; ""; IFERROR(VLOOKUP($A2:$A; BurgerBrasov!A:B; 2; FALSE); "")))']);
+          `=ARRAYFORMULA(IF($A2:$A=""; ""; ${ourPrice}))`]);
   mx.getRange(2, 1, 1, 2).setFormulas(f);
 
   const rows = [];
@@ -565,10 +568,11 @@ function WOO_MENU(siteUrl) {
   const products = fetchAll('type=simple') , variations = fetchAll('type=variation');
   if (!products) return 'HTTP error';
   const rows = [['Item', 'Price', 'Category', 'ID', 'Original price']];
-  products.forEach(p => rows.push([p.name, Number(p.prices.price) / minor(p), p.categories.map(c => c.name).join(', '), p.id, Number(p.prices.regular_price) / minor(p)]));
+  // WooCommerce sends names HTML-encoded ("Steak &#038; Eggs", "The &#8217;Merican"): decode() turns them into plain text
+  products.forEach(p => rows.push([decode(p.name), Number(p.prices.price) / minor(p), p.categories.map(c => decode(c.name)).join(', '), p.id, Number(p.prices.regular_price) / minor(p)]));
   (variations || []).forEach(v => {
-    const opt = (v.variation || '').replace(/^[^:]+:\s*/, '');       // "Extra: Cu parmezan" -> "Cu parmezan"
-    rows.push([`${v.name} – ${opt}`, Number(v.prices.price) / minor(v), (v.categories || []).map(c => c.name).join(', '), v.id, Number(v.prices.regular_price) / minor(v)]);
+    const opt = decode((v.variation || '').replace(/^[^:]+:\s*/, ''));       // "Extra: Cu parmezan" -> "Cu parmezan"
+    rows.push([`${decode(v.name)} – ${opt}`, Number(v.prices.price) / minor(v), (v.categories || []).map(c => decode(c.name)).join(', '), v.id, Number(v.prices.regular_price) / minor(v)]);
   });
   return rows;
 }

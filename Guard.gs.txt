@@ -1,0 +1,298 @@
+// Guard.gs : who may edit what. Replaces the old guard.gs (SHEET / OWNERS / setup / guard).
+//
+// Access table lives in the Settings tab, columns E:I (the key/value settings in A:C are not touched):
+//   E Email | F Tab | G Coloane | H Mod | I Culoare
+//   Mod: "admin" = may change anything (Tab/Coloane ignored) | empty or "gol" = only fill EMPTY cells | "complet" = may also change filled cells
+//   Coloane: "C:E, H" or "*" (empty = all columns). Data rows only (row 1 of a tab is admin-only). One tab per row.
+//   Colour (I): background for the cells that user fills; first colour found for the email is used.
+//
+// Two layers:
+//   1. applyAccess()   : real Google Sheets protections (a user physically cannot edit outside tabs/columns given to them)
+//   2. accessGuard(e)  : inside the allowed columns, restores filled cells (empty-only mode) and colours new entries
+// Tabs with no row for a user are admin-only. Tabs nobody has access to get protections only (no snapshot, no guard):
+// script-written tabs stay untouched by the guard.
+
+const AC_SHEET = 'Settings';
+const AC_FIRST_COL = 5;                              // column E
+const AC_OWNERS = ['craciun.lex@gmail.com'];         // always admin, so you can never lock yourself out
+const AC_DEFAULT_COLOR = '#fff2cc';                  // light yellow, for users without a colour in Settings
+const AC_SNAP = '_snap_';                            // hidden snapshot tab per guarded tab: _snap_<tab name>
+const AC_ORIG = '_orig_';                            // hidden tab per guarded tab: original value + colour of cells users touched
+const AC_TAG = 'ACCESS';                            // description prefix of the protections this script owns
+const AC_SPARE_ROWS = 100;                           // empty rows kept below the data of guarded tabs (users cannot insert rows)
+
+// ---------- one-time setup ----------
+
+// Creates the access block in Settings (E1:I) with you as admin. Safe to re-run: does nothing if E1 is already filled.
+function setupAccess() {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(AC_SHEET) || ss.insertSheet(AC_SHEET);
+  if (sh.getRange(1, AC_FIRST_COL).getValue() !== '') { acSay_('Blocul de acces exista deja in ' + AC_SHEET + '.'); return; }
+  sh.getRange(1, AC_FIRST_COL, 1, 5).setValues([['Acces: email', 'Tab', 'Coloane', 'Mod', 'Culoare']]).setFontWeight('bold');
+  sh.getRange(2, AC_FIRST_COL, 1, 5).setValues([[AC_OWNERS[0], '', '', 'admin', '']]);
+  sh.getRange(1, AC_FIRST_COL + 1).setNote('Numele exact al tabului. Un tab pe rand; acelasi email poate avea mai multe randuri.');
+  sh.getRange(1, AC_FIRST_COL + 2).setNote('Ex: C:E, H   sau   *   (gol = toate coloanele). Randul 1 (antetul) e mereu doar pentru admin.');
+  sh.getRange(1, AC_FIRST_COL + 3).setNote('admin = poate modifica orice\ngol = completeaza doar celule goale\ncomplet = poate modifica si celulele pline');
+  sh.getRange(1, AC_FIRST_COL + 4).setNote('Culoarea de fundal a celulelor completate de acest utilizator, ex. #cfe8ff. Gol = galben deschis.');
+  [220, 170, 110, 90, 90].forEach((w, i) => sh.setColumnWidth(AC_FIRST_COL + i, w));
+  acSay_('Gata. Completeaza randurile din Settings (E:I), apoi ruleaza installAccessTriggers() si applyAccess().');
+}
+
+// Installs the onEdit + onChange triggers. Safe to re-run: removes the old guard triggers first (no duplicates).
+function installAccessTriggers() {
+  const ss = SpreadsheetApp.getActive();
+  const mine = ['guard', 'accessGuard', 'accessOnChange'];
+  ScriptApp.getProjectTriggers().forEach(t => { if (mine.indexOf(t.getHandlerFunction()) !== -1) ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('accessGuard').forSpreadsheet(ss).onEdit().create();
+  ScriptApp.newTrigger('accessOnChange').forSpreadsheet(ss).onChange().create();
+  const legacy = ss.getSheetByName('_snap');                 // single-tab snapshot of the old guard.gs
+  if (legacy) ss.deleteSheet(legacy);
+  Logger.log('Triggers installed: accessGuard (onEdit), accessOnChange (onChange).');
+}
+
+// ---------- settings ----------
+
+function acRead_() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(AC_SHEET);
+  const admins = new Set(AC_OWNERS.map(s => s.toLowerCase()));
+  const rules = [], colors = {};
+  if (sh && sh.getLastRow() > 1) {
+    sh.getRange(2, AC_FIRST_COL, sh.getLastRow() - 1, 5).getValues().forEach(([email, tab, cols, mode, color]) => {
+      email = String(email).trim().toLowerCase();
+      if (!email) return;
+      mode = String(mode).trim().toLowerCase();
+      if (color && !colors[email]) colors[email] = String(color).trim();
+      if (mode === 'admin') { admins.add(email); return; }
+      tab = String(tab).trim();
+      if (!tab) return;
+      rules.push({ email, tab, ranges: acParseCols_(cols), full: mode === 'complet' });
+    });
+  }
+  return { admins, rules, colors };
+}
+
+function acColNum_(s) {
+  let n = 0;
+  String(s).trim().toUpperCase().split('').forEach(ch => { n = n * 26 + (ch.charCodeAt(0) - 64); });
+  return n;
+}
+
+// "C:E, H" -> [[3,5],[8,8]]; empty / "*" -> all columns
+function acParseCols_(s) {
+  const t = String(s || '').trim();
+  if (!t || t === '*') return [[1, 100000]];
+  const out = [];
+  t.split(',').forEach(part => {
+    const m = part.trim().toUpperCase().match(/^([A-Z]{1,3})(?::([A-Z]{1,3}))?$/);
+    if (m) { const a = acColNum_(m[1]), b = m[2] ? acColNum_(m[2]) : a; out.push([Math.min(a, b), Math.max(a, b)]); }
+  });
+  return out;
+}
+
+function acInRanges_(ranges, c) { return ranges.some(([a, b]) => c >= a && c <= b); }
+function acSnapName_(tab) { return (AC_SNAP + tab).slice(0, 100); }
+function acOrigName_(tab) { return (AC_ORIG + tab).slice(0, 100); }
+// the hidden "original" tab of a tab, created on demand and big enough for rows x cols
+function acOrigSheet_(ss, tab, rows, cols) {
+  const o = ss.getSheetByName(acOrigName_(tab)) || ss.insertSheet(acOrigName_(tab));
+  if (o.getMaxRows() < rows) o.insertRowsAfter(o.getMaxRows(), rows - o.getMaxRows());
+  if (o.getMaxColumns() < cols) o.insertColumnsAfter(o.getMaxColumns(), cols - o.getMaxColumns());
+  if (!o.isSheetHidden()) o.hideSheet();
+  return o;
+}
+function acCombine_(rg) {
+  const v = rg.getValues(), f = rg.getFormulas();
+  return v.map((row, i) => row.map((c, j) => f[i][j] || c));
+}
+function acSay_(msg) {
+  Logger.log(msg);
+  try { SpreadsheetApp.getUi().alert(msg); } catch (e) { /* no UI (trigger / editor run) */ }
+}
+
+// ---------- layer 1: real protections ----------
+
+// Run after every change in the access table. Admin only.
+function applyAccess() {
+  const ss = SpreadsheetApp.getActive(), A = acRead_();
+  const me = (Session.getActiveUser().getEmail() || '').toLowerCase();
+  if (me && !A.admins.has(me)) { acSay_('Doar adminii pot rula aceasta functie.'); return; }
+  const admins = Array.from(A.admins);
+  const users = Array.from(new Set(A.rules.map(r => r.email)));
+
+  // everyone named must be able to open the file as editor (Google sends the invitation mail)
+  const owner = ss.getOwner() ? ss.getOwner().getEmail().toLowerCase() : '';
+  const have = new Set(ss.getEditors().map(u => u.getEmail().toLowerCase()).concat(owner));
+  const invite = admins.concat(users).filter((e, i, a) => a.indexOf(e) === i && !have.has(e));
+  if (invite.length) ss.addEditors(invite);
+
+  // drop the protections this script made earlier (others, made by hand, stay)
+  [SpreadsheetApp.ProtectionType.SHEET, SpreadsheetApp.ProtectionType.RANGE].forEach(t =>
+    ss.getProtections(t).forEach(p => { if (String(p.getDescription()).indexOf(AC_TAG) === 0) p.remove(); }));
+
+  const known = new Set(ss.getSheets().map(s => s.getName()));
+  const missingTabs = Array.from(new Set(A.rules.map(r => r.tab))).filter(t => !known.has(t));
+
+  ss.getSheets().forEach(sh => {
+    const tab = sh.getName(), rules = A.rules.filter(r => r.tab === tab);
+    if (rules.length) {                                        // room for users to type new rows (they cannot insert rows)
+      const need = sh.getLastRow() + AC_SPARE_ROWS;
+      if (sh.getMaxRows() < need) sh.insertRowsAfter(sh.getMaxRows(), need - sh.getMaxRows());
+    }
+    // which users may write in which column -> contiguous segments with the same user set
+    const maxC = sh.getMaxColumns(), segs = [];
+    let start = 0, key = '';
+    for (let c = 1; c <= maxC + 1; c++) {
+      const k = c > maxC ? '' : Array.from(new Set(rules.filter(r => acInRanges_(r.ranges, c)).map(r => r.email))).sort().join(',');
+      if (k !== key) { if (key) segs.push({ a: start, b: c - 1, users: key.split(',') }); start = c; key = k; }
+    }
+    const sp = sh.protect().setDescription(AC_TAG + ': ' + tab);
+    sp.removeEditors(sp.getEditors());
+    if (sp.canDomainEdit()) sp.setDomainEdit(false);
+    sp.addEditors(admins);
+    if (!segs.length || sh.getMaxRows() < 2) return;
+    const ranges = segs.map(s => sh.getRange(2, s.a, sh.getMaxRows() - 1, s.b - s.a + 1));
+    sp.setUnprotectedRanges(ranges);
+    segs.forEach((s, i) => {                                   // inside the open part, only the listed users (+ admins)
+      const rp = ranges[i].protect().setDescription(AC_TAG + ': ' + tab + ' ' + ranges[i].getA1Notation());
+      rp.removeEditors(rp.getEditors());
+      if (rp.canDomainEdit()) rp.setDomainEdit(false);
+      rp.addEditors(admins.concat(s.users));
+    });
+  });
+
+  refreshSnapshots();
+  acSay_('Acces aplicat. Admini: ' + admins.join(', ') + '. Utilizatori: ' + (users.join(', ') || '-')
+    + (invite.length ? '. Invitati ca editori: ' + invite.join(', ') : '')
+    + (missingTabs.length ? '. ATENTIE, taburi inexistente in Settings: ' + missingTabs.join(', ') : ''));
+}
+
+// ---------- layer 2: empty-only guard ----------
+
+// Re-takes the snapshot of every tab that has user rows. Run after a script wrote into such a tab.
+function refreshSnapshots() {
+  const ss = SpreadsheetApp.getActive(), A = acRead_();
+  Array.from(new Set(A.rules.map(r => r.tab))).forEach(tab => {
+    const sh = ss.getSheetByName(tab);
+    if (!sh) return;
+    const snap = ss.getSheetByName(acSnapName_(tab)) || ss.insertSheet(acSnapName_(tab));
+    snap.clear();
+    const r = sh.getDataRange();
+    snap.getRange(1, 1, r.getNumRows(), r.getNumColumns()).setValues(acCombine_(r));
+    snap.hideSheet();
+    const orig = ss.getSheetByName(acOrigName_(tab));          // rows/columns may have moved: originals no longer line up
+    if (orig) orig.clear();
+  });
+}
+
+// row/column inserts or deletes (admin only, users are protected out) shift the snapshot: take it again
+function accessOnChange(e) {
+  if (e && ['INSERT_ROW', 'REMOVE_ROW', 'INSERT_COLUMN', 'REMOVE_COLUMN'].indexOf(e.changeType) !== -1) refreshSnapshots();
+}
+
+function accessGuard(e) {
+  if (!e || !e.range) return;
+  const rg = e.range, tab = rg.getSheet().getName();
+  const snap = e.source.getSheetByName(acSnapName_(tab));
+  if (!snap) return;                                           // tab has no user rows: protections only
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    const A = acRead_();
+    const row = rg.getRow(), col = rg.getColumn(), nr = rg.getNumRows(), nc = rg.getNumColumns();
+    if (snap.getMaxRows() < row + nr - 1) snap.insertRowsAfter(snap.getMaxRows(), row + nr - 1 - snap.getMaxRows());
+    if (snap.getMaxColumns() < col + nc - 1) snap.insertColumnsAfter(snap.getMaxColumns(), col + nc - 1 - snap.getMaxColumns());
+    const s = snap.getRange(row, col, nr, nc);
+    const cur = acCombine_(rg);
+    const email = e.user ? String(e.user.getEmail() || '').toLowerCase() : '';
+    if (email && A.admins.has(email)) {                        // admin: accept and remember; this is the new "original" too
+      s.setValues(cur);
+      acOrigSheet_(e.source, tab, row + nr - 1, col + nc - 1).getRange(row, col, nr, nc).clearContent();
+      return;
+    }
+
+    // Google often gives no email for editors outside the owner's domain. The protections already limit who can type in
+    // these columns, so if exactly one user may write there, the edit is theirs. Otherwise: strictest rule, default colour.
+    let who = email;
+    if (!who) {
+      const cands = Array.from(new Set(A.rules.filter(r => r.tab === tab && r.ranges.some(([a, b]) => a <= col + nc - 1 && b >= col)).map(r => r.email)));
+      if (cands.length === 1) who = cands[0];
+    }
+    Logger.log('accessGuard: tab=' + tab + ' cell=' + rg.getA1Notation() + ' email=[' + email + '] user=[' + who + '] colour=' + (A.colors[who] || 'default'));
+
+    // what this user may do per column; unidentified user = strictest rule of the tab, empty-only
+    const mine = A.rules.filter(r => r.tab === tab && (!who || r.email === who));
+    const perm = c => {
+      const rs = mine.filter(r => acInRanges_(r.ranges, c));
+      return rs.length ? { full: !!who && rs.some(r => r.full) } : null;
+    };
+    const old = s.getValues();
+    // originals of cells users touched before: 7 chars of colour (#rrggbb) + the original value as text
+    const origSh = acOrigSheet_(e.source, tab, row + nr - 1, col + nc - 1);
+    const oRange = origSh.getRange(row, col, nr, nc), ov = oRange.getValues();
+    const out = cur.map((r, i) => r.map((c, j) => {
+      const p = perm(col + j);
+      if (row + i < 2 || !p) return old[i][j];                 // header or column not granted: put it back
+      if (p.full) return c;
+      const o = String(ov[i][j]);
+      const wasEmpty = o ? o.slice(7) === '' : String(old[i][j]) === '';
+      return wasEmpty ? c : old[i][j];                         // originally empty (even if the user filled it): editable; originally filled: restored
+    }));
+    if (out.some((r, i) => r.some((c, j) => c !== cur[i][j]))) rg.setValues(out);
+    s.setValues(out);
+
+    // colour: differs from the original -> user colour; back to the original -> original colour again
+    const color = A.colors[who] || AC_DEFAULT_COLOR, bgs = rg.getBackgrounds();
+    let dirty = false;
+    for (let i = 0; i < nr; i++) for (let j = 0; j < nc; j++) {
+      if (row + i < 2 || !perm(col + j)) continue;
+      let o = String(ov[i][j]);
+      if (!o) {
+        if (String(out[i][j]) === String(old[i][j])) continue;  // nothing changed in this cell
+        o = bgs[i][j] + String(old[i][j]);                      // first change: remember how it looked before
+      }
+      const cell = rg.getCell(i + 1, j + 1);
+      if (String(out[i][j]) === o.slice(7)) { cell.setBackground(o.slice(0, 7)); ov[i][j] = ''; }
+      else { cell.setBackground(color); ov[i][j] = o; }
+      dirty = true;
+    }
+    if (dirty) oRange.setValues(ov);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// ---------- hiding tabs (cosmetic, global: hidden for everyone, not per user; not a security measure) ----------
+
+// Hides every tab that no user row grants access to. Tabs granted to at least one user stay visible (to everybody).
+function hideAdminTabs() {
+  const ss = SpreadsheetApp.getActive(), A = acRead_();
+  const me = (Session.getActiveUser().getEmail() || '').toLowerCase();
+  if (me && !A.admins.has(me)) { acSay_('Doar adminii pot ascunde / arata taburile.'); return; }
+  const shared = new Set(A.rules.map(r => r.tab));
+  const keep = ss.getSheets().filter(s => shared.has(s.getName()));
+  if (!keep.length) { acSay_('Niciun tab nu e dat unui utilizator in Settings: nu ascund nimic.'); return; }
+  ss.setActiveSheet(keep[0]);                                  // the active tab cannot be hidden
+  let n = 0;
+  ss.getSheets().forEach(s => { if (!shared.has(s.getName()) && !s.isSheetHidden()) { s.hideSheet(); n++; } });
+  acSay_('Ascunse ' + n + ' taburi. Vizibile: ' + keep.map(s => s.getName()).join(', ') + '. Pentru a le vedea: Acces > Arata toate taburile.');
+}
+
+// Un-hides all tabs except the hidden helper tabs (_snap_..., _orig_...). Admin only.
+function showAllTabs() {
+  const ss = SpreadsheetApp.getActive(), A = acRead_();
+  const me = (Session.getActiveUser().getEmail() || '').toLowerCase();
+  if (me && !A.admins.has(me)) { acSay_('Doar adminii pot ascunde / arata taburile.'); return; }
+  ss.getSheets().forEach(s => { if (s.isSheetHidden() && s.getName().indexOf(AC_SNAP) !== 0 && s.getName().indexOf(AC_ORIG) !== 0) s.showSheet(); });
+}
+
+// ---------- menu ----------
+
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu('Acces')
+    .addItem('Aplica accesul din Settings', 'applyAccess')
+    .addItem('Reimprospateaza snapshot-urile', 'refreshSnapshots')
+    .addSeparator()
+    .addItem('Ascunde taburile de admin', 'hideAdminTabs')
+    .addItem('Arata toate taburile', 'showAllTabs')
+    .addToUi();
+}
