@@ -1,0 +1,142 @@
+// Highlight.gs : makes the tabs and columns you edit by hand easy to find. Changes only the look (tab colours, header colours,
+// light tints, conditional colours, header notes, a "Ce editez" guide tab) - never the data. Safe to run again at any time.
+// Run highlightManual() once (or menu Acces > Coloreaza taburile de editat). Names start with HL_ to not clash with other files.
+//
+//   GREEN  tab + green header + green tint  = you edit this (and what exactly: column A/B, column B, ...)
+//   GREY   tab + grey header                = the script writes this, do not edit
+//   YELLOW cell (~ or ≈)                    = suggestion waiting for your review (remove the marker after checking)
+const HL = {
+  tabManual: '#34A853', tabScript: '#9AA0A6', tabMixed: '#F9AB00',
+  headEdit: '#1E8E3E', headEditFg: '#FFFFFF',
+  headScript: '#9AA0A6', headScriptFg: '#FFFFFF',
+  tintEdit: '#E6F4EA',
+  tintScriptFg: '#80868B',
+  reviewBg: '#FFF2CC', reviewFg: '#7A5C00',
+  noneBg: '#F1F3F4', noneFg: '#80868B'
+};
+const HL_MASTERS = ['TwoGuys Delivery', 'Smash Delivery', 'TwoGuys Home', 'Breakfast'];   // A = name, B = price: edit; C.. = platform names
+const HL_MIXED = ['MASTER Twoguys'];                // looks set by Style.gs / access table, only the tab colour is added
+const HL_GUIDE = 'Ce editez';
+// tabs the script owns, by name; every other tab that is not manual is grey too (hidden helper tabs are skipped)
+const HL_SCRIPT_TABS = ['_Snapshot', '_Removed', 'Reports', 'History', 'RunLog', 'Meta', 'Map', 'Channels', 'MatchMatrix'];
+
+function hlRows_(sh) { return Math.max(sh.getMaxRows() - 1, 1); }
+
+function hlHeader_(range, bg, fg) { range.setBackground(bg).setFontColor(fg).setFontWeight('bold'); }
+
+// conditional colours for suggestion markers and "-" (not sold there) in a range
+function hlMarkerRules_(range) {
+  const mk = f => SpreadsheetApp.newConditionalFormatRule().setRanges([range]).whenFormulaSatisfied(f);
+  const a = range.getA1Notation().split(':')[0].replace(/\$/g, '');
+  return [
+    mk('=OR(LEFT(' + a + ',1)="≈",LEFT(' + a + ',1)="~",ISNUMBER(SEARCH("≈",' + a + ')),ISNUMBER(SEARCH("~",' + a + ')))').setBackground(HL.reviewBg).setFontColor(HL.reviewFg).build(),
+    mk('=' + a + '="-"').setBackground(HL.noneBg).setFontColor(HL.noneFg).build()
+  ];
+}
+
+function hlMaster_(sh) {
+  const lastCol = Math.max(sh.getLastColumn(), 3), rows = hlRows_(sh);
+  sh.setTabColor(HL.tabManual);
+  hlHeader_(sh.getRange(1, 1, 1, 2), HL.headEdit, HL.headEditFg);
+  hlHeader_(sh.getRange(1, 3, 1, lastCol - 2), HL.headScript, HL.headScriptFg);
+  sh.getRange(2, 1, rows, 2).setBackground(HL.tintEdit);                       // A:B you edit
+  sh.getRange(2, 3, rows, lastCol - 2).setBackground(null);                     // platform names: script follows, you correct
+  sh.getRange(1, 1).setNote('SE EDITEAZĂ. Numele de referință pe care îl vrei pe toate platformele. Redenumești un produs aici.');
+  sh.getRange(1, 2).setNote('SE EDITEAZĂ. Prețul de referință pe toate platformele. Schimbi prețul aici, apoi pe platforme.');
+  sh.getRange(1, 3).setNote('Numele exact de pe fiecare platformă. Îl completează scriptul. Corectezi tu dacă e greșit; pui "-" dacă produsul nu se vinde acolo; ștergi "≈" după verificare.');
+  sh.setConditionalFormatRules(hlMarkerRules_(sh.getRange(2, 3, rows, lastCol - 2)));
+}
+
+function hlSettings_(sh) {
+  const rows = hlRows_(sh);
+  sh.setTabColor(HL.tabManual);
+  hlHeader_(sh.getRange(1, 2), HL.headEdit, HL.headEditFg);
+  hlHeader_(sh.getRange(1, 1), HL.headScript, HL.headScriptFg);
+  hlHeader_(sh.getRange(1, 3), HL.headScript, HL.headScriptFg);
+  sh.getRange(2, 2, rows, 1).setBackground(HL.tintEdit);                        // Valoare: you edit
+  sh.getRange(2, 1, rows, 1).setFontColor(HL.tintScriptFg);                     // Setare: do not rename
+  sh.getRange(2, 3, rows, 1).setFontColor(HL.tintScriptFg);                     // Explicatie
+  sh.getRange(1, 2).setNote('SE EDITEAZĂ doar coloana B (Valoare). Coloana A (nume setare) nu se redenumește.');
+}
+
+function hlCompMap_(sh) {
+  const lastCol = Math.max(sh.getLastColumn(), 2), rows = hlRows_(sh);
+  sh.setTabColor(HL.tabManual);
+  hlHeader_(sh.getRange(1, 1, 1, lastCol), HL.headEdit, HL.headEditFg);
+  sh.getRange(1, 1).setNote('Produsele noastre. Le adaugă scriptul (syncCompMapProducts), nu le șterge și nu le modifica.');
+  sh.getRange(1, 2).setNote('Echivalentul fiecărui produs la concurent. ~ = sugestie automată, ≈ = sugestie AI: verifici, apoi ștergi semnul. "-" = nu are echivalent.');
+  sh.getRange(2, 2, rows, lastCol - 1).setBackground(null);
+  sh.setConditionalFormatRules(hlMarkerRules_(sh.getRange(2, 2, rows, Math.max(lastCol - 1, 1))));
+}
+
+function highlightManual() {
+  const ss = SpreadsheetApp.getActive();
+  const done = [], missing = [];
+  const get = n => { const s = ss.getSheetByName(n); if (!s) missing.push(n); return s; };
+
+  HL_MASTERS.forEach(n => { const s = get(n); if (s) { hlMaster_(s); done.push(n); } });
+  const set = ss.getSheetByName(SETTINGS_SHEET); if (set) { hlSettings_(set); done.push(SETTINGS_SHEET); } else missing.push(SETTINGS_SHEET);
+  const cm = ss.getSheetByName(COMPMAP_SHEET); if (cm) { hlCompMap_(cm); done.push(COMPMAP_SHEET); } else missing.push(COMPMAP_SHEET);
+  HL_MIXED.forEach(n => { const s = get(n); if (s) { s.setTabColor(HL.tabMixed); done.push(n); } });
+
+  // everything else the script owns: grey tab (hidden helper tabs skipped)
+  const manual = new Set(HL_MASTERS.concat([SETTINGS_SHEET, COMPMAP_SHEET, HL_GUIDE], HL_MIXED));
+  ss.getSheets().forEach(s => {
+    const n = s.getName();
+    if (manual.has(n) || s.isSheetHidden()) return;
+    s.setTabColor(HL.tabScript);
+  });
+
+  highlightGuideTab_();
+  Logger.log('Colorate: ' + done.join(', ') + (missing.length ? ' | taburi negasite: ' + missing.join(', ') : ''));
+  try { ss.toast('Taburile de editat sunt verzi. Vezi tabul "' + HL_GUIDE + '".', 'Gata', 8); } catch (e) {}
+}
+
+// A small first tab that lists what to edit and where. Rewritten on every run (do not type in it).
+function highlightGuideTab_() {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(HL_GUIDE) || ss.insertSheet(HL_GUIDE, 0);
+  sh.clear(); sh.clearConditionalFormatRules();
+  const rows = [
+    ['CE EDITEZI MANUAL (restul îl scrie scriptul)', '', '', ''],
+    ['', '', '', ''],
+    ['Tab', 'Ce editezi', 'Când', 'Culoare tab'],
+    ['TwoGuys Delivery', 'Coloana A (nume) și B (preț). Coloanele C… = numele de pe platformă: corectezi, pui "-" dacă nu se vinde acolo, ștergi "≈" după verificare', 'Produs nou, preț nou, redenumire', 'verde'],
+    ['Smash Delivery', 'La fel ca TwoGuys Delivery', 'La fel', 'verde'],
+    ['TwoGuys Home', 'La fel (Burgerbrasov + Mypassage; "-" = nu se vinde la ridicare)', 'La fel', 'verde'],
+    ['Breakfast', 'La fel', 'La fel', 'verde'],
+    ['Settings', 'Doar coloana B (Valoare): emailuri, Telegram, praguri, produse/taburi/categorii cu program, taburi mute/prioritare. Tabelul de acces E:I (admin)', 'Când se schimbă destinatari, program sau reguli', 'verde'],
+    ['CompMap', 'Echivalentele la concurenți: verifici celulele galbene (~ sau ≈), ștergi semnul când e corect, "-" = fără echivalent', 'După prefill / llmFill, înainte de buildMatrix', 'verde'],
+    ['MASTER Twoguys', 'Lista produselor magazinului + imagini; fiecare utilizator doar coloanele din tabelul de acces', 'Produs nou / imagine nouă', 'portocaliu'],
+    ['Toate celelalte taburi', 'NU se editează: le scrie scriptul (platforme „- G/W/B”, Mypassage, Burgerbrasov, _Snapshot, _Removed, Reports, History, RunLog, Meta, Map, Channels, MatchMatrix)', '-', 'gri'],
+    ['', '', '', ''],
+    ['În celulele din taburile verzi', '', '', ''],
+    ['Antet verde cu text alb', 'Coloană pe care o editezi tu', '', ''],
+    ['Antet gri', 'Coloană completată de script (poți corecta o celulă, dar nu o rescrie pe toată)', '', ''],
+    ['Fundal verde deschis', 'Celulele A:B din taburile master și coloana B din Settings', '', ''],
+    ['Fundal galben', 'Sugestie (~ fuzzy, ≈ AI) care așteaptă verificarea ta', '', ''],
+    ['Fundal gri cu "-"', 'Produs oprit intenționat de pe acea platformă', '', ''],
+    ['', '', '', ''],
+    ['Notă', 'Fiecare antet verde are o notiță (treci cu mouse-ul peste celulă). Taburile se recolorează cu meniul Acces > Coloreaza taburile de editat (sau highlightManual).', '', '']
+  ];
+  sh.getRange(1, 1, rows.length, 4).setValues(rows);
+  sh.setHiddenGridlines(true);
+  sh.setColumnWidths(1, 1, 230); sh.setColumnWidth(2, 640); sh.setColumnWidth(3, 260); sh.setColumnWidth(4, 110);
+  const all = sh.getRange(1, 1, rows.length, 4);
+  all.setFontFamily('Arial').setFontSize(10).setVerticalAlignment('middle').setWrap(true);
+  sh.getRange('A1').setFontSize(14).setFontWeight('bold').setWrap(false);
+  hlHeader_(sh.getRange(3, 1, 1, 4), HL.headEdit, HL.headEditFg);
+  sh.getRange(4, 1, 6, 4).setBackground(HL.tintEdit);               // 6 manual tabs rows (Delivery..Settings, CompMap)
+  sh.getRange(10, 1, 1, 4).setBackground('#FEF7E0');                // MASTER Twoguys (mixed)
+  sh.getRange(11, 1, 1, 4).setBackground(HL.noneBg).setFontColor(HL.tintScriptFg);
+  sh.getRange(4, 1, 8, 1).setFontWeight('bold');
+  sh.getRange(13, 1, 1, 2).setFontWeight('bold');
+  sh.getRange(14, 1).setBackground(HL.headEdit).setFontColor(HL.headEditFg).setFontWeight('bold');
+  sh.getRange(15, 1).setBackground(HL.headScript).setFontColor(HL.headScriptFg).setFontWeight('bold');
+  sh.getRange(16, 1).setBackground(HL.tintEdit).setFontWeight('bold');
+  sh.getRange(17, 1).setBackground(HL.reviewBg).setFontColor(HL.reviewFg).setFontWeight('bold');
+  sh.getRange(18, 1).setBackground(HL.noneBg).setFontColor(HL.noneFg).setFontWeight('bold');
+  sh.getRange(20, 1).setFontWeight('bold');
+  sh.setTabColor(HL.tabManual);
+  sh.setFrozenRows(0);
+}

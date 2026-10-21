@@ -294,5 +294,7 @@ function onOpen() {
     .addSeparator()
     .addItem('Ascunde taburile de admin', 'hideAdminTabs')
     .addItem('Arata toate taburile', 'showAllTabs')
+    .addSeparator()
+    .addItem('Coloreaza taburile de editat', 'highlightManual')
     .addToUi();
 }
