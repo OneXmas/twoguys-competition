@@ -190,15 +190,19 @@ function weeklyDigest() {
   const logRows = log.getLastRow() > 1 ? log.getRange(2, 1, log.getLastRow() - 1, 4).getValues() : [];
   const failed = {};
   logRows.filter(r => (r[0] instanceof Date ? fmt(r[0]) : String(r[0])) >= sinceStr && String(r[3]).startsWith('FETCH'))
-    .forEach(r => failed[r[1]] = (failed[r[1]] || 0) + 1);
+    .forEach(r => {
+      const f = failed[r[1]] || (failed[r[1]] = { n: 0, why: [] });
+      f.n++;
+      f.why.push(`${r[0] instanceof Date ? fmt(r[0]) : r[0]}: ${String(r[3]).replace(/^FETCH FAILED\s*/, '') || 'fără date'}`);
+    });
   let health = Object.keys(failed).length
-    ? `<div style="padding:10px;background:#fef3c7;border-left:4px solid #f59e0b;font-size:13px;">⚠️ Zile fără date: ${Object.entries(failed).map(([c, n]) => `${esc(c)} (${n})`).join(', ')}</div>`
+    ? `<div style="padding:10px;background:#fef3c7;border-left:4px solid #f59e0b;font-size:13px;">⚠️ Zile fără date: ${Object.entries(failed).map(([c, f]) => `${esc(c)} (${f.n}) <span style="color:#6b7280;">${esc(f.why.join('; '))}</span>`).join('<br>')}</div>`
     : `<p style="font-size:13px;color:${col.ADDED};">✅ Toate sursele au livrat date în fiecare zi.</p>`;
   const cmS = ss.getSheetByName(COMPMAP_SHEET);
   if (cmS && cmS.getLastRow() > 1) {
     const v = cmS.getRange(2, 2, cmS.getLastRow() - 1, cmS.getLastColumn() - 1).getValues().flat().map(String);
     const blank = v.filter(x => !x).length, unrev = v.filter(x => /^[~≈]/.test(x)).length;
-    health += `<p style="font-size:13px;">CompMap: ${blank} celule nepotrivite, ${unrev} sugestii nerevizuite (~/≈)</p>`;
+    health += `<p style="font-size:13px;">CompMap: ${blank} celule goale (produs fără corespondent la concurent, normal în mare parte), ${unrev} sugestii de revizuit (~/≈) în tabul CompMap</p>`;
   }
 
   // 6. own channels vs site
