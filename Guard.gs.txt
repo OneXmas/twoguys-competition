@@ -296,5 +296,11 @@ function onOpen() {
     .addItem('Arata toate taburile', 'showAllTabs')
     .addSeparator()
     .addItem('Coloreaza taburile de editat', 'highlightManual')
+    .addSeparator()
+    .addItem('Completeaza lista Competitors', 'populateCompetitors')
+    .addItem('Reconstruieste tabul Listings', 'buildListings')
+    .addItem('Ascunde taburile de date', 'hideDataTabs')
+    .addItem('Ordoneaza taburile', 'orderTabs')
+    .addItem('Marcheaza CompMap (verde/galben/rosu)', 'annotateCompMap')
     .addToUi();
 }

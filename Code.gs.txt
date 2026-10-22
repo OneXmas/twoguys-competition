@@ -73,6 +73,214 @@ const COMPETITORS = [
 const OWN_CHANNELS = ['Mypassage', 'TwoGuys - G', 'TwoGuys - W', 'TwoGuys - B', 'TheSmash - G', 'TheSmash - W', 'TheSmash - B',
   'Passage by TwoGuys - W', 'Br. by Passage - W', 'Br. by TwoGuys - W'];
 
+// ===== COMPETITOR REGISTRY =====
+// Tab "Competitors": one row per competitor brand. Fill the link of every place where it sells; each link becomes a tracked tab
+// "<Brand> - G|W|B|Site" (created and filled automatically) and joins COMPETITORS below. Columns:
+//   A Brand | B Activ (checkbox) | C Glovo | D Wolt | E Bolt | F Website propriu | G Status (written by the script)
+const REGISTRY_SHEET = 'Competitors';
+const REGISTRY_PLATFORMS = {
+  G: { col: 3, fn: 'GLOVO_MENU', nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', re: /glovoapp\.com/i },
+  W: { col: 4, fn: 'WOLT_MENU',  nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', stockCol: 'E', origCol: 'F', re: /wolt\.com/i },
+  B: { col: 5, fn: 'BOLT_MENU',  nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', midday: true, re: /food\.bolt\.eu/i },
+};
+// own website: WooCommerce shops (wp-json) first, then pages with schema.org Menu data; anything else needs a custom reader
+const REGISTRY_SITE_READERS = [
+  { fn: 'WOO_MENU',    nameCol: 'A', priceCol: 'B', idCol: 'D', origCol: 'E', catCol: 'C' },
+  { fn: 'JSONLD_MENU', nameCol: 'A', priceCol: 'B', catCol: 'C' },
+];
+const REGISTRY_COLS = 7;
+const HL_COLORS_REG = { headEdit: '#1E8E3E', headScript: '#9AA0A6', tintEdit: '#E6F4EA', tabManual: '#34A853' };
+const registryCfg_ = p => (({ re, col, ...c }) => c)(REGISTRY_PLATFORMS[p]);
+// our own shops are listed in the Competitors tab too (orange) so it shows every shop that is tracked; they cannot be switched off here
+const OWN_BRAND_COLOR = '#FCE5CD';
+const ownTab_ = tab => OWN_CHANNELS.indexOf(tab) !== -1 || tab === 'Burgerbrasov';
+const ownBrands_ = () => OWN_CHANNELS.concat(['Burgerbrasov']).map(t => t.replace(/ - (G|W|B)$/, ''));
+
+function registryRows_() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(REGISTRY_SHEET);
+  if (!sh || sh.getLastRow() < 2) return [];
+  const out = [];
+  sh.getRange(2, 1, sh.getLastRow() - 1, 6).getValues().forEach((v, i) => {
+    const brand = String(v[0] || '').trim(); if (!brand) return;
+    const on = v[1] === true || /^(da|yes|1|true)$/i.test(String(v[1]).trim());
+    Object.keys(REGISTRY_PLATFORMS).forEach(p => { const url = String(v[REGISTRY_PLATFORMS[p].col - 1] || '').trim(); if (url) out.push({ row: i + 2, brand, p, url, on, tab: `${brand} - ${p}` }); });
+    const site = String(v[5] || '').trim();
+    // older competitor site tabs are named just by the brand ("Marcos", "Vivo"), newer ones "<Brand> - Site"
+    if (site) out.push({ row: i + 2, brand, p: 'Site', url: site, on, tab: COMPETITORS.some(c => c.sheet === brand) ? brand : `${brand} - Site` });
+  });
+  return out;
+}
+
+// which reader works for a competitor's own website is found by syncCompetitors and remembered here
+function registrySiteReader_(tab) {
+  try { const i = PropertiesService.getScriptProperties().getProperty('site_reader_' + tab); return i == null ? null : REGISTRY_SITE_READERS[Number(i)]; } catch (e) { return null; }
+}
+
+try {
+  const rows = registryRows_();
+  rows.filter(r => !r.on && !ownTab_(r.tab)).forEach(r => { const i = COMPETITORS.findIndex(c => c.sheet === r.tab); if (i >= 0) COMPETITORS.splice(i, 1); });   // Activ unticked = stop tracking
+  rows.filter(r => r.on || ownTab_(r.tab)).forEach(r => {
+    const have = COMPETITORS.find(c => c.sheet === r.tab);
+    if (have) { if (have.fn && have.url && r.url !== have.url) have.url = r.url; return; }                                                    // a new link in the registry wins
+    const cfg = r.p === 'Site' ? registrySiteReader_(r.tab) : registryCfg_(r.p);
+    if (cfg) COMPETITORS.push({ sheet: r.tab, url: r.url, ...cfg });
+  });
+} catch (e) { /* no spreadsheet in this context (e.g. custom function) – hard-coded list only */ }
+
+// Creates / restyles the Competitors tab. Safe to re-run (also converts the first version: Brand | URL | Activ | Status).
+function setupCompetitors() {
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName(REGISTRY_SHEET);
+  if (!sh) sh = ss.insertSheet(REGISTRY_SHEET);
+  const old = sh.getLastRow() > 0 && /URL magazin/.test(String(sh.getRange(1, 2).getValue()));
+  let rows = [];
+  if (old) {                                                       // brand, url, active -> new layout
+    rows = sh.getRange(2, 1, Math.max(sh.getLastRow() - 1, 0), 3).getValues().filter(r => r[0] || r[1]).map(([b, u, a]) => {
+      const row = [b, !/^(nu|no|0|false)$/i.test(String(a).trim()), '', '', '', '', ''];
+      const p = Object.keys(REGISTRY_PLATFORMS).find(k => REGISTRY_PLATFORMS[k].re.test(u));
+      if (p) row[REGISTRY_PLATFORMS[p].col - 1] = u; else if (u) row[5] = u;
+      return row;
+    });
+    sh.clear();
+  }
+  const H = HL_COLORS_REG, n = 500;                                // room for 500 competitors
+  sh.getRange(1, 1, 1, REGISTRY_COLS).setValues([['Brand', 'Activ', 'Glovo – link magazin', 'Wolt – link magazin', 'Bolt – link magazin', 'Website propriu (comenzi)', 'Status (automat)']]);
+  if (rows.length) sh.getRange(2, 1, rows.length, REGISTRY_COLS).setValues(rows);
+  sh.getRange(1, 1, 1, 6).setBackground(H.headEdit).setFontColor('#FFFFFF').setFontWeight('bold');   // green = you edit
+  sh.getRange(1, 7).setBackground(H.headScript).setFontColor('#FFFFFF').setFontWeight('bold');        // grey = the script writes
+  sh.getRange(2, 1, n, 6).setBackground(H.tintEdit);
+  sh.getRange(2, 7, n, 1).setBackground('#F1F3F4').setFontColor('#80868B');
+  sh.getRange(2, 2, n, 1).insertCheckboxes().setHorizontalAlignment('center');
+  sh.getRange(2, 3, n, 4).setFontColor('#1155CC').setWrap(false);
+  sh.setFrozenRows(1); sh.setFrozenColumns(1);
+  [170, 60, 280, 280, 280, 280, 330].forEach((w, i) => sh.setColumnWidth(i + 1, w));
+  sh.setTabColor(H.tabManual);
+  sh.getRange(1, 1).setNote('Lista tuturor magazinelor urmărite. PORTOCALIU = magazinele noastre, VERDE DESCHIS = concurenți. Un brand pe rând; completezi linkul fiecărei platforme unde vinde. Coloana Status arată ce lipsește ("fără: Bolt, Website") ca să vezi ușor dacă ai uitat vreun magazin.');
+  styleCompetitorRows_(sh);
+  competitorsLegend_(sh);
+}
+
+// Steps to do every time a competitor is added, written to the right of the table (columns I:J). Rewritten on every setupCompetitors run:
+// do not type in it.
+function competitorsLegend_(sh) {
+  const rows = [
+    ['', 'LA FIECARE CONCURENT NOU – pașii, în ordine'],
+    ['1', 'Adaugi un rând: Brand (nume scurt, fără apostrof sau ghilimele – devine numele tabului și al coloanei din rapoarte), lipești linkul magazinului în coloana platformei (Glovo / Wolt / Bolt) și, dacă are, adresa site-ului propriu. Bifezi „Activ”.'],
+    ['2', 'Rulezi din meniul Acces → „Completeaza lista Competitors” (sau aștepți dailyCheck de la 10:00). Scriptul creează tabul, citește meniul și completează coloana Status.'],
+    ['3', 'Verifici Status: trebuie să scrie „adăugat N produse” pentru fiecare link. Dacă scrie „nu s-au putut citi”, linkul e greșit (copiază din nou adresa paginii magazinului). „fără: Bolt, Website” = platformele unde nu ai pus link: dacă vinde și acolo, adaugă-le.'],
+    ['4', 'CompMap: verifici celulele noi colorate (verde = ștergi doar ~ / ≈, galben = verifici, roșu = ștergi celula sau scrii "-"). Apoi Acces → „Marcheaza CompMap” și rulezi buildMatrix.'],
+    ['5', 'Setări email (tab Settings, coloana Valoare), doar dacă e cazul: muted_tabs = taburi urmărite dar fără email; priority_tabs = taburi afișate primele; scheduled_tabs = taburi cu meniu doar la anumite ore (ex. mic dejun); ignore_items = produse care nu contează (ex. Popular).'],
+    ['6', 'Prima zi e doar „baseline”: emailul zilnic NU raportează nimic pentru concurentul nou. Alertele (preț, produse noi, retrase, reduceri) încep din ziua următoare. Verifici în tabul RunLog că nu scrie „FETCH FAILED” pentru el.'],
+    ['7', 'Opțional: Acces → „Ordoneaza taburile”, „Reconstruieste tabul Listings”, „Ascunde taburile de date” (tabul nou se ascunde singur dacă celelalte sunt ascunse).'],
+    ['', ''],
+    ['', 'CULORI ȘI REGULI'],
+    ['', 'PORTOCALIU = magazinele noastre (nu se pot opri de aici; verifici raportul „Magazine proprii”). VERDE DESCHIS = concurenți. Debifezi „Activ” ca să oprești urmărirea unui concurent (tabul rămâne).'],
+    ['', 'Un magazin NOU AL NOSTRU nu se adaugă doar aici: are nevoie și de un tab master și de o linie în OWN_REPORTS (OwnShops.gs) – cere asistență.'],
+  ];
+  const r = sh.getRange(1, 9, rows.length, 2);
+  r.clearContent(); r.setValues(rows);
+  r.setWrap(true).setVerticalAlignment('top').setBackground('#FFF9E5').setFontSize(10);
+  sh.getRange(1, 9, 1, 2).setFontWeight('bold').setFontSize(11).setBackground('#F9AB00').setFontColor('#FFFFFF');
+  sh.getRange(10, 9, 1, 2).setFontWeight('bold').setBackground('#F9AB00').setFontColor('#FFFFFF');
+  sh.getRange(2, 9, 7, 1).setFontWeight('bold').setHorizontalAlignment('center');
+  sh.setColumnWidth(8, 24); sh.setColumnWidth(9, 34); sh.setColumnWidth(10, 640);
+}
+
+// orange rows = our own shops, light green = competitors (re-applied after every sync, so new rows are coloured too)
+function styleCompetitorRows_(reg) {
+  const maxR = reg.getMaxRows();
+  if (maxR < 2) return;
+  const own = new Set(ownBrands_());
+  const brands = reg.getRange(2, 1, maxR - 1, 1).getValues().flat().map(b => String(b).trim());
+  reg.getRange(2, 1, maxR - 1, 6).setBackgrounds(brands.map(b => Array(6).fill(own.has(b) ? OWN_BRAND_COLOR : HL_COLORS_REG.tintEdit)));
+  reg.getRange(2, 1, maxR - 1, 1).setFontWeights(brands.map(b => [own.has(b) ? 'bold' : 'normal']));
+}
+
+// One-time: fills the Competitors tab with every shop already tracked in the COMPETITORS list (our own shops first, in orange), one row per
+// brand, with its Glovo / Wolt / Bolt links and website. Brands already in the tab are left alone. Safe to re-run.
+function populateCompetitors() {
+  const ss = SpreadsheetApp.getActive();
+  setupCompetitors();
+  const reg = ss.getSheetByName(REGISTRY_SHEET);
+  // the tab has tick boxes down to row 501, so getLastRow() is useless here: collect the filled rows by their Brand cell
+  const maxR = reg.getMaxRows(), existing = maxR > 1 ? reg.getRange(2, 1, maxR - 1, REGISTRY_COLS).getValues().filter(r => String(r[0]).trim()) : [];
+  const have = new Set(existing.map(r => String(r[0]).trim()));
+  const brands = {};                                                       // brand -> [Activ, Glovo, Wolt, Bolt, Website]
+  COMPETITORS.forEach(c => {
+    const m = c.sheet.match(/^(.*) - (G|W|B)$/), brand = m ? m[1] : c.sheet;
+    const row = brands[brand] = brands[brand] || [true, '', '', '', ''];
+    let url = c.url || '';
+    if (!c.fn) { const sh = ss.getSheetByName(c.sheet); const a1 = sh ? String(sh.getRange(1, 1).getValue()) : ''; url = /^https?:/.test(a1) ? a1 : ''; }   // IMPORTXML tabs keep their page in A1
+    row[m ? { G: 1, W: 2, B: 3 }[m[2]] : 4] = url || '(adresa e în tab)';
+  });
+  const add = Object.entries(brands).filter(([b]) => !have.has(b)).sort((a, b) => a[0].localeCompare(b[0])).map(([b, r]) => [b, ...r, '']);
+  const ownOrder = ownBrands_().filter((b, i, a) => a.indexOf(b) === i), rank = r => { const i = ownOrder.indexOf(String(r[0]).trim()); return i === -1 ? 999 : i; };
+  const all = existing.concat(add).sort((x, y) => rank(x) - rank(y));       // our shops on top (stable sort keeps the rest in order)                                        // existing rows first (this also pulls back rows an earlier run wrote far down), then the new brands
+  if (all.length) {
+    if (maxR < all.length + 1) reg.insertRowsAfter(maxR, all.length + 1 - maxR);
+    const body = reg.getRange(2, 1, reg.getMaxRows() - 1, REGISTRY_COLS);
+    body.clearContent(); reg.getRange(2, 2, reg.getMaxRows() - 1, 1).clearDataValidations();
+    reg.getRange(2, 1, all.length, REGISTRY_COLS).setValues(all);
+    reg.getRange(2, 2, 500, 1).insertCheckboxes().setHorizontalAlignment('center');                       // keeps the ticked ones ticked
+    if (reg.getMaxRows() > 501) reg.deleteRows(502, reg.getMaxRows() - 501);
+    styleCompetitorRows_(reg);
+  }
+  Logger.log(`Competitors: ${add.length} branduri adăugate, ${Object.keys(brands).length - add.length} existau deja`);
+  syncCompetitors();                                                       // fills the Status column
+}
+
+// Creates the tab for every new link and fetches its menu once, so tomorrow's run already compares against a baseline.
+function syncCompetitors() {
+  const ss = SpreadsheetApp.getActive(), reg = ss.getSheetByName(REGISTRY_SHEET);
+  if (!reg) return;
+  const status = {};                                               // row -> [lines]
+  const say = (row, t) => (status[row] = status[row] || []).push(t);
+  let added = false;
+  registryRows_().forEach(r => {
+    if (!r.on && !ownTab_(r.tab)) return say(r.row, `${r.p}: oprit`);
+    let sh = ss.getSheetByName(r.tab), cfg = COMPETITORS.find(c => c.sheet === r.tab);
+    if (sh && sh.getLastRow() > 1 && cfg) return say(r.row, `${r.p}: urmărit (${sh.getLastRow() - 1} produse)`);
+    const created = !sh;
+    if (created) sh = ss.insertSheet(r.tab);
+    let data; LAST_META = null;
+    if (r.p === 'Site') {                                          // try each known site reader until one finds a menu
+      for (let i = 0; i < REGISTRY_SITE_READERS.length && !(Array.isArray(data) && data.length > 1); i++) {
+        try { data = this[REGISTRY_SITE_READERS[i].fn](r.url); } catch (e) { data = 'ERR ' + e.message; }
+        if (Array.isArray(data) && data.length > 1) {
+          PropertiesService.getScriptProperties().setProperty('site_reader_' + r.tab, String(i));
+          cfg = { sheet: r.tab, url: r.url, ...REGISTRY_SITE_READERS[i] };
+          if (!COMPETITORS.some(c => c.sheet === r.tab)) COMPETITORS.push(cfg);
+        }
+      }
+      if (!(Array.isArray(data) && data.length > 1)) {
+        if (created) ss.deleteSheet(sh);
+        return say(r.row, 'Site: nu știu să citesc acest site (nu e WooCommerce / meniu schema.org) – are nevoie de un cititor dedicat');
+      }
+    } else {
+      cfg = cfg || { sheet: r.tab, url: r.url, ...registryCfg_(r.p) };
+      try { data = this[cfg.fn](cfg.url); } catch (e) { data = 'ERR ' + e.message; }
+    }
+    if (Array.isArray(data) && data.length > 1) {
+      sh.getRange(1, 1, data.length, data[0].length).setValues(data); writeMeta(ss, r.tab); styleDataTab_(sh);
+      say(r.row, `${r.p}: adăugat ${data.length - 1} produse`); added = true;
+    } else say(r.row, `${r.p}: nu s-au putut citi produsele (${String(data).slice(0, 50)}) – se reîncearcă`);
+    Utilities.sleep(r.p === 'B' ? 5000 : 1000);
+  });
+  // per brand: which platforms have no link at all - a quick way to spot a shop you forgot
+  const cells = reg.getRange(2, 1, reg.getMaxRows() - 1, 6).getValues();
+  Object.keys(status).forEach(row => {
+    const v = cells[Number(row) - 2] || [], miss = ['Glovo', 'Wolt', 'Bolt', 'Website'].filter((n, i) => !String(v[2 + i] || '').trim());
+    if (miss.length) status[row].push('fără: ' + miss.join(', '));
+  });
+  Object.entries(status).forEach(([row, lines]) => reg.getRange(Number(row), 7).setValue(lines.join(' · ')));
+  styleCompetitorRows_(reg);
+  // new competitor tab(s): add their column to CompMap (fuzzy ~ suggestions to review; existing cells untouched) and refresh MatchMatrix
+  if (added) {
+    try { prefillCompMapNew(); annotateCompMap(); buildMatrix(); orderTabs(); } catch (e) { Logger.log('CompMap/MatchMatrix not updated: ' + e.message); }
+  }
+}
+
+
 const ALERT_EMAIL = 'craciun.lex@gmail.com';
 const REPORT_SHEET = 'Reports', SNAP_SHEET = '_Snapshot', LOG_SHEET = 'RunLog';
 const HISTORY_SHEET = 'History';
@@ -97,6 +305,7 @@ let LAST_META = null;
 function refreshSources() {
   const ss = SpreadsheetApp.getActive();
   const status = {};                       // sheet -> error text ('' = ok)
+  try { syncCompetitors(); } catch (e) { Logger.log('syncCompetitors: ' + e.message); }   // new rows in the Competitors tab
   for (const cfg of COMPETITORS) {
     const sh = ss.getSheetByName(cfg.sheet);
     if (!sh) continue;
@@ -431,6 +640,7 @@ function dailyCheck() {
 
   const anyFailed = logRows.some(r => String(r[3]).startsWith('FETCH'));
   if (changes.length || anyFailed) sendAlert(today, changes, logRows);
+  try { buildListings(); } catch (e) { Logger.log('buildListings: ' + e.message); }
 }
 
 

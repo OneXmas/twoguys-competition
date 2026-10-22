@@ -5,7 +5,7 @@
 //   GREEN  tab + green header + green tint  = you edit this (and what exactly: column A/B, column B, ...)
 //   GREY   tab + grey header                = the script writes this, do not edit
 //   YELLOW cell (~ or ≈)                    = suggestion waiting for your review (remove the marker after checking)
-const HL = {
+var HL = {
   tabManual: '#34A853', tabScript: '#9AA0A6', tabMixed: '#F9AB00',
   headEdit: '#1E8E3E', headEditFg: '#FFFFFF',
   headScript: '#9AA0A6', headScriptFg: '#FFFFFF',
@@ -14,11 +14,11 @@ const HL = {
   reviewBg: '#FFF2CC', reviewFg: '#7A5C00',
   noneBg: '#F1F3F4', noneFg: '#80868B'
 };
-const HL_MASTERS = ['TwoGuys Delivery', 'Smash Delivery', 'TwoGuys Home', 'Breakfast'];   // A = name, B = price: edit; C.. = platform names
-const HL_MIXED = ['MASTER Twoguys'];                // looks set by Style.gs / access table, only the tab colour is added
-const HL_GUIDE = 'Ce editez';
+var HL_MASTERS = ['TwoGuys Delivery', 'Smash Delivery', 'TwoGuys Home', 'Breakfast'];   // A = name, B = price: edit; C.. = platform names
+var HL_MIXED = ['MASTER Twoguys'];                // looks set by Style.gs / access table, only the tab colour is added
+var HL_GUIDE = 'Ce editez';
 // tabs the script owns, by name; every other tab that is not manual is grey too (hidden helper tabs are skipped)
-const HL_SCRIPT_TABS = ['_Snapshot', '_Removed', 'Reports', 'History', 'RunLog', 'Meta', 'Map', 'Channels', 'MatchMatrix'];
+var HL_SCRIPT_TABS = ['_Snapshot', '_Removed', 'Reports', 'History', 'RunLog', 'Meta', 'Map', 'Channels', 'MatchMatrix'];
 
 function hlRows_(sh) { return Math.max(sh.getMaxRows() - 1, 1); }
 
@@ -66,7 +66,7 @@ function hlCompMap_(sh) {
   sh.getRange(1, 1).setNote('Produsele noastre. Le adaugă scriptul (syncCompMapProducts), nu le șterge și nu le modifica.');
   sh.getRange(1, 2).setNote('Echivalentul fiecărui produs la concurent. ~ = sugestie automată, ≈ = sugestie AI: verifici, apoi ștergi semnul. "-" = nu are echivalent.');
   sh.getRange(2, 2, rows, lastCol - 1).setBackground(null);
-  sh.setConditionalFormatRules(hlMarkerRules_(sh.getRange(2, 2, rows, Math.max(lastCol - 1, 1))));
+  sh.setConditionalFormatRules(hlMarkerRules_(sh.getRange(2, 2, rows, Math.max(lastCol - 1, 1))).slice(1));   // marker colours come from annotateCompMap (verdict green / amber / red)
 }
 
 function highlightManual() {
@@ -106,7 +106,7 @@ function highlightGuideTab_() {
     ['TwoGuys Home', 'La fel (Burgerbrasov + Mypassage; "-" = nu se vinde la ridicare)', 'La fel', 'verde'],
     ['Breakfast', 'La fel', 'La fel', 'verde'],
     ['Settings', 'Doar coloana B (Valoare): emailuri, Telegram, praguri, produse/taburi/categorii cu program, taburi mute/prioritare. Tabelul de acces E:I (admin)', 'Când se schimbă destinatari, program sau reguli', 'verde'],
-    ['CompMap', 'Echivalentele la concurenți: verifici celulele galbene (~ sau ≈), ștergi semnul când e corect, "-" = fără echivalent', 'După prefill / llmFill, înainte de buildMatrix', 'verde'],
+    ['CompMap', 'Echivalentele la concurenți. Celule colorate (~ sau ≈): verde = probabil corect → ștergi doar semnul; galben = verifici; roșu = probabil greșit → șterge celula sau scrie "-". Detalii în notița din celulă. "-" = fără echivalent', 'După prefill / llmFill, înainte de buildMatrix', 'verde'],
     ['MASTER Twoguys', 'Lista produselor magazinului + imagini; fiecare utilizator doar coloanele din tabelul de acces', 'Produs nou / imagine nouă', 'portocaliu'],
     ['Toate celelalte taburi', 'NU se editează: le scrie scriptul (platforme „- G/W/B”, Mypassage, Burgerbrasov, _Snapshot, _Removed, Reports, History, RunLog, Meta, Map, Channels, MatchMatrix)', '-', 'gri'],
     ['', '', '', ''],
@@ -114,7 +114,7 @@ function highlightGuideTab_() {
     ['Antet verde cu text alb', 'Coloană pe care o editezi tu', '', ''],
     ['Antet gri', 'Coloană completată de script (poți corecta o celulă, dar nu o rescrie pe toată)', '', ''],
     ['Fundal verde deschis', 'Celulele A:B din taburile master și coloana B din Settings', '', ''],
-    ['Fundal galben', 'Sugestie (~ fuzzy, ≈ AI) care așteaptă verificarea ta', '', ''],
+    ['Fundal galben', 'Sugestie (~ fuzzy, ≈ AI) în CompMap, colorată de annotateCompMap: verde / galben / roșu', '', ''],
     ['Fundal gri cu "-"', 'Produs oprit intenționat de pe acea platformă', '', ''],
     ['', '', '', ''],
     ['Notă', 'Fiecare antet verde are o notiță (treci cu mouse-ul peste celulă). Taburile se recolorează cu meniul Acces > Coloreaza taburile de editat (sau highlightManual).', '', '']

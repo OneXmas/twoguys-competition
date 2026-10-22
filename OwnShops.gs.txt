@@ -253,7 +253,9 @@ function ownShopsReport() {
   };
   const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const col = EMAIL_CFG.colors;
-  const platform = tab => displayName(tab).replace(/.* - /, '');
+  let curTabs = [];                                 // tabs of the report being built: two venues on one platform get the venue name too
+  const platform = tab => { const p = displayName(tab).replace(/.* - /, '');
+    return curTabs.filter(t => displayName(t).replace(/.* - /, '') === p).length > 1 ? `${p} (${tab.replace(/ - [GWB]$/, '')})` : p; };
   let html = '', total = 0;
   const tg = [];                                    // plain-text lines for Telegram
   // categories remembered by the daily snapshot, so a product that is off today (breakfast, weekend-only) still has one
@@ -266,6 +268,7 @@ function ownShopsReport() {
     const map = ss.getSheetByName(r.map); if (!map || map.getLastRow() < 2) continue;
     const headers = map.getRange(1, 1, 1, map.getLastColumn()).getValues()[0].map(String).filter(Boolean);
     const tabs = headers.filter(h => COMPETITORS.some(c => c.sheet === h));
+    curTabs = tabs;
     const tabIdx = tabs.map(t => headers.indexOf(t));
     const rowsRange = map.getRange(2, 1, map.getLastRow() - 1, headers.length), rows = rowsRange.getValues();
     const prices = tabs.map(listPrices);
@@ -289,7 +292,7 @@ function ownShopsReport() {
         if (mapped === '-') { cells.push('<td align="center" style="color:#9ca3af;">n/a</td>'); return; }
         if (mapped) mappedPerTab[i].add(mapped);
         const p = mapped ? prices[i][mapped] : undefined;
-        if (p == null && (CFG().scheduledItem(name) || CFG().scheduledItem(mapped) || CFG().scheduledTabs.includes(tab) || CFG().scheduledCategory(rowCat.cat))) { cells.push('<td align="center" style="color:#9ca3af;" title="produs cu program">program</td>'); return; }
+        if (p == null && (CFG().scheduledItem(name) || CFG().scheduledItem(mapped) || CFG().scheduledTabs.includes(tab) || CFG().scheduledCategory(rowCat.cat))) { cells.push('<td align="center" style="color:#d1d5db;" title="produs cu program – nu e vizibil acum, nu se poate verifica">–</td>'); return; }
         if (p == null) { cells.push(`<td align="center" style="color:${col.up};font-weight:700;">X</td>`); notes.push(`${platform(tab)}: lipsă`); bad = true; return; }
         (p.oos ? oosOn : stockOn).push(tab);
         const tag = (unreviewed ? ' <span style="color:#d97706;font-size:11px;" title="potrivire AI nerevizuită">≈</span>' : '') + (p.disc ? ` <span style="color:${col.ADDED};font-size:11px;">−${p.disc}%</span>` : '')

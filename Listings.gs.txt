@@ -1,0 +1,148 @@
+// Listings.gs : fewer tabs to look at, faster review. Changes only the look and one derived tab - never the platform tabs' data.
+//   buildListings()   one tab "Listings" with every item of every shop and competitor (filter by brand / platform / category).
+//                     Rebuilt at the end of dailyCheck; the per-platform tabs stay as the script's raw data.
+//   hideDataTabs()    hides the per-platform data tabs and the helper tabs (the script keeps reading them). Undo: menu Acces > Arata toate taburile.
+//   annotateCompMap() puts a verdict (green / amber / red + a cell note) on every CompMap cell that still has a ~ or ≈ marker.
+
+const LST_SHEET = 'Listings';
+const LST_HEAD = ['Tip', 'Brand', 'Platformă', 'Categorie', 'Produs', 'Preț', 'Preț afișat', 'Reducere %', 'Stoc', 'Văzut prima dată'];
+
+// "Dafud - W" -> { brand: 'Dafud', platform: 'Wolt' }; own sites / site tabs -> platform 'Site'
+function lstSplit_(tab) {
+  const m = String(tab).match(/^(.*) - (G|W|B|Site)$/);
+  if (!m) return { brand: tab, platform: 'Site' };
+  return { brand: m[1], platform: { G: 'Glovo', W: 'Wolt', B: 'Bolt', Site: 'Site' }[m[2]] };
+}
+
+function buildListings() {
+  const ss = SpreadsheetApp.getActive(), tz = ss.getSpreadsheetTimeZone();
+  const sh = ss.getSheetByName(LST_SHEET) || ss.insertSheet(LST_SHEET, 0);
+  const own = new Set(OWN_CHANNELS.concat(['Burgerbrasov']));
+  const first = {};                                                   // tab | cosmeticKey(name) -> first seen
+  const snap = ss.getSheetByName(SNAP_SHEET);
+  if (snap && snap.getLastRow() > 1) snap.getRange(2, 1, snap.getLastRow() - 1, 6).getValues().forEach(r => {
+    if (r[5]) first[r[0] + '|' + cosmeticKey(r[2])] = r[5] instanceof Date ? Utilities.formatDate(r[5], tz, 'yyyy-MM-dd') : String(r[5]).slice(0, 10);
+  });
+  const rows = [];
+  for (const cfg of COMPETITORS) {
+    const src = ss.getSheetByName(cfg.sheet);
+    if (!src || src.getLastRow() < 2) continue;
+    const last = src.getLastRow(), col = c => c ? src.getRange(`${c}2:${c}${last}`).getValues().flat() : [];
+    const names = col(cfg.nameCol), prices = col(cfg.priceCol), origs = col(cfg.origCol), cats = col(cfg.catCol), stock = col(cfg.stockCol), promos = col(cfg.promoCol);
+    const { brand, platform } = lstSplit_(cfg.sheet), type = own.has(cfg.sheet) ? 'Noi' : 'Concurent';
+    names.forEach((n, i) => {
+      const name = String(n || '').replace(/\s+/g, ' ').trim(), shown = Number(prices[i]);
+      if (!name || !(shown > 0)) return;
+      const o = Number(origs[i]), list = o > shown ? o : shown;
+      const badge = promoPct(promos[i]), disc = list > shown ? (badge > 0 ? badge : Math.round((1 - shown / list) * 100)) : '';
+      rows.push([type, brand, platform, String(cats[i] || '').trim(), name, list, disc ? shown : '', disc, /epuizat/i.test(stock[i] || '') ? 'epuizat' : '', first[cfg.sheet + '|' + cosmeticKey(name)] || '']);
+    });
+  }
+  if (sh.getFilter()) sh.getFilter().remove();
+  sh.clearContents();
+  sh.getRange(1, 1, 1, LST_HEAD.length).setValues([LST_HEAD]).setBackground('#9AA0A6').setFontColor('#FFFFFF').setFontWeight('bold');
+  if (rows.length) sh.getRange(2, 1, rows.length, LST_HEAD.length).setValues(rows);
+  sh.setFrozenRows(1); sh.setFrozenColumns(5);
+  sh.getRange(1, 1, Math.max(rows.length + 1, 2), LST_HEAD.length).createFilter();
+  [80, 170, 80, 170, 330, 70, 90, 90, 70, 110].forEach((w, i) => sh.setColumnWidth(i + 1, w));
+  sh.getRange(1, 1).setNote('Tab generat de script (nu se editează): toate produsele tuturor magazinelor. Filtrează după Tip / Brand / Platformă / Categorie din antet. „Preț” = prețul de listă; „Preț afișat” apare doar dacă produsul e redus.');
+  sh.setTabColor('#9AA0A6');
+  Logger.log(`Listings: ${rows.length} produse din ${COMPETITORS.length} taburi`);
+}
+
+// Hide every per-platform data tab and helper tab. The script keeps reading them; "Acces > Arata toate taburile" brings them back.
+function hideDataTabs() {
+  const ss = SpreadsheetApp.getActive();
+  const data = new Set(COMPETITORS.map(c => c.sheet));
+  const keep = ss.getSheetByName(LST_SHEET) || ss.getSheets().find(s => !data.has(s.getName()) && s.getName()[0] !== '_');
+  if (keep) ss.setActiveSheet(keep);                                  // the active tab cannot be hidden
+  let n = 0;
+  ss.getSheets().forEach(s => { const name = s.getName(); if ((data.has(name) || name[0] === '_') && !s.isSheetHidden()) { s.hideSheet(); n++; } });
+  orderTabs();
+  Logger.log(`Ascunse ${n} taburi de date`);
+  try { ss.toast(`Ascunse ${n} taburi de date. Le vezi cu Acces > Arata toate taburile.`, 'Gata', 8); } catch (e) {}
+}
+
+// ---------- CompMap review ----------
+const CM_OK = '#D9EAD3', CM_CHECK = '#FFF2CC', CM_BAD = '#F4CCCC';
+
+// Verdict for one pair (our product, competitor product): ok / check / bad + the reason, from name similarity, quantities and price.
+function cmVerdict_(ours, ourPrice, theirs, theirPrice, usedBy, ai) {
+  const sim = similarity(mapNorm(ours), mapNorm(theirs)), qa = qtyOf(ours), qb = qtyOf(theirs);
+  const ratio = ourPrice > 0 && theirPrice > 0 ? theirPrice / ourPrice : null;
+  const why = [];
+  let v = 'ok';
+  if (qa.length && qb.length && qa.join() !== qb.join()) { v = 'check'; why.push(`cantități diferite (${qa.join('/')} vs ${qb.join('/')})`); }
+  if (ratio != null && (ratio < 0.6 || ratio > 1.8)) { v = 'bad'; why.push('prețurile sunt foarte departe'); }
+  else if (ratio != null && (ratio < 0.75 || ratio > 1.35) && v === 'ok') { v = 'check'; why.push('prețuri destul de diferite'); }
+  if (sim < 0.7 && v === 'ok') { v = 'check'; why.push('nume doar asemănător'); }
+  if (sim < 0.6) v = ai ? (v === 'bad' ? 'bad' : 'check') : 'bad';      // AI (≈) matches may use very different wording
+  if (usedBy.length > 1 && v === 'ok') { v = 'check'; why.push(`același produs al lor e propus și pentru: ${usedBy.filter(x => x !== ours).slice(0, 2).join(', ')}`); }
+  if (!ratio) why.push('fără preț de comparat');
+  return { v, sim, ratio, why };
+}
+
+function annotateCompMap() {
+  const ss = SpreadsheetApp.getActive(), cm = ss.getSheetByName(COMPMAP_SHEET);
+  if (!cm || cm.getLastRow() < 2) return;
+  const lastCol = cm.getLastColumn(), rows = cm.getLastRow() - 1;
+  const headers = cm.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+  const data = cm.getRange(2, 1, rows, lastCol).getValues();
+  const own = {}; ownProducts().forEach(p => own[cosmeticKey(p.name)] = p.price);
+  const theirPrices = headers.map((h, c) => c ? priceOf(ss, h) : {});
+  const bg = cm.getRange(2, 2, rows, lastCol - 1).getBackgrounds();
+  const notes = cm.getRange(2, 2, rows, lastCol - 1).getNotes();
+  const count = { ok: 0, check: 0, bad: 0 };
+  for (let c = 1; c < lastCol; c++) {
+    const usedBy = {};                                                // their item -> our products it is proposed for
+    data.forEach(r => { const m = String(r[c]).replace(/^[~≈]/, '').trim(); if (m && m !== '-') (usedBy[m] = usedBy[m] || []).push(String(r[0])); });
+    data.forEach((r, i) => {
+      const raw = String(r[c]).trim(), marked = /^[~≈]/.test(raw), theirs = raw.replace(/^[~≈]/, '').trim();
+      if (!marked || !theirs || theirs === '-') { bg[i][c - 1] = null; if (/^REVIEW/.test(notes[i][c - 1])) notes[i][c - 1] = ''; return; }
+      const ours = String(r[0]), ourP = Number(own[cosmeticKey(ours)]) || 0, theirP = Number(theirPrices[c][theirs]) || 0;
+      const x = cmVerdict_(ours, ourP, theirs, theirP, usedBy[theirs] || [], raw[0] === '≈');
+      count[x.v]++;
+      bg[i][c - 1] = { ok: CM_OK, check: CM_CHECK, bad: CM_BAD }[x.v];
+      const head = { ok: '✔ PROBABIL CORECT – confirmi: șterge doar semnul ~ / ≈ din față', check: '? VERIFICĂ – dacă e același produs șterge ~ / ≈, dacă nu are echivalent scrie -', bad: '✘ PROBABIL GREȘIT – șterge celula (sau scrie - dacă nu au acest produs)' }[x.v];
+      notes[i][c - 1] = `REVIEW ${head}\nNoi: ${ours}${ourP ? ` (${ourP} lei)` : ''}\nEi (${headers[c]}): ${theirs}${theirP ? ` (${theirP} lei${x.ratio ? `, ${x.ratio >= 1 ? '+' : ''}${Math.round((x.ratio - 1) * 100)}%` : ''})` : ''}\nNume asemănător: ${Math.round(x.sim * 100)}%${x.why.length ? '\nMotiv: ' + x.why.join('; ') : ''}\nSă las ca atare = rămâne marcat până îl verifici.`;
+    });
+  }
+  cm.getRange(2, 2, rows, lastCol - 1).setBackgrounds(bg).setNotes(notes);
+  cm.setConditionalFormatRules(hlMarkerRules_(cm.getRange(2, 2, Math.max(cm.getMaxRows() - 1, 1), lastCol - 1)).slice(1));   // keep only the grey "-" rule: the yellow marker rule would hide the verdict colours
+  cm.getRange(1, 2).setNote('Verde = probabil corect (ștergi doar ~ / ≈). Galben = de verificat. Roșu = probabil greșit (șterge celula). "-" = nu au echivalent. Trece cu mouse-ul peste o celulă colorată pentru motiv. După ce ai terminat rulează din nou annotateCompMap (meniul Acces) ca să dispară culorile celulelor verificate.');
+  const msg = `CompMap: ${count.ok} probabil corecte, ${count.check} de verificat, ${count.bad} probabil greșite`;
+  Logger.log(msg);
+  try { ss.toast(msg, 'CompMap', 10); } catch (e) {}
+}
+
+// ---------- tab order and style of data tabs ----------
+const LST_ORDER_HEAD = ['Ce editez', 'Listings', 'Competitors', 'CompMap', 'MatchMatrix', 'Reports',
+  'TwoGuys Delivery', 'Smash Delivery', 'TwoGuys Home', 'Breakfast', 'MASTER Twoguys', 'Settings',
+  'History', 'RunLog', 'Meta', 'Channels', 'Map'];
+
+// Visible working tabs first (what you look at, then what you edit, then logs), then every platform data tab in COMPETITORS order
+// (our shops first, then competitors), then helper tabs. Safe to re-run; new competitor tabs land in the right place.
+function orderTabs() {
+  const ss = SpreadsheetApp.getActive();
+  const want = LST_ORDER_HEAD.concat(COMPETITORS.map(c => c.sheet));
+  let pos = 1;
+  want.forEach(name => {
+    const sh = ss.getSheetByName(name);
+    if (!sh || sh.isSheetHidden()) return;                              // hidden tabs cannot be moved: they keep their place at the end
+    ss.setActiveSheet(sh); ss.moveActiveSheet(pos++);
+  });
+  const first = ss.getSheetByName(LST_SHEET) || ss.getSheets()[0];
+  ss.setActiveSheet(first);
+}
+
+// A platform data tab created by the script: same look as the other script-owned tabs (grey tab, grey bold header, frozen row);
+// hidden too when the other data tabs are already hidden.
+function styleDataTab_(sh) {
+  const ss = SpreadsheetApp.getActive();
+  sh.setTabColor('#9AA0A6');
+  const w = Math.max(sh.getLastColumn(), 1);
+  sh.getRange(1, 1, 1, w).setBackground('#9AA0A6').setFontColor('#FFFFFF').setFontWeight('bold');
+  sh.setFrozenRows(1);
+  const others = COMPETITORS.map(c => ss.getSheetByName(c.sheet)).filter(s => s && s.getSheetId() !== sh.getSheetId());
+  if (others.length && others.every(s => s.isSheetHidden())) { ss.setActiveSheet(ss.getSheetByName(LST_SHEET) || ss.getSheets()[0]); sh.hideSheet(); }
+}
