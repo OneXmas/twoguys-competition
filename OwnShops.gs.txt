@@ -264,6 +264,29 @@ function ownShopsReport() {
   if (snap && snap.getLastRow() > 1) snap.getRange(2, 1, snap.getLastRow() - 1, 8).getValues().forEach(r => { if (r[7]) (snapCat[r[0]] = snapCat[r[0]] || {})[String(r[2]).trim()] = String(r[7]); });
   const renamed = [];                               // master cells updated automatically this run
 
+  // how many days in a row each item has been on discount, from the History tab (the last 200000 rows are read: roughly the last month)
+  const ownTabs = new Set(); OWN_REPORTS.forEach(r => r.tabs.forEach(t => ownTabs.add(t)));
+  const discRun = {};                               // tab|item -> { days, since } for a discount still running today
+  const hist = ss.getSheetByName(HISTORY_SHEET);
+  let histFrom = '';
+  if (hist && hist.getLastRow() > 1) {
+    const from = Math.max(2, hist.getLastRow() - 199999), dayOf = v => v instanceof Date ? Utilities.formatDate(v, ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd') : String(v).slice(0, 10);
+    const run = {};
+    hist.getRange(from, 1, hist.getLastRow() - from + 1, 5).getValues().forEach(([d, tab, item, , disc]) => {
+      if (!ownTabs.has(tab)) return;
+      const day = dayOf(d), k = tab + '|' + String(item).trim();
+      if (!histFrom || day < histFrom) histFrom = day;
+      if (Number(disc) > 0) { const s = run[k] = run[k] || { days: 0, since: day, last: day }; if (s.last !== day || !s.days) { s.days++; } s.last = day; }
+      else delete run[k];
+    });
+    Object.keys(run).forEach(k => { if (run[k].last >= today) discRun[k] = run[k]; });     // only discounts still running today
+  }
+  const discTag = (tab, item, disc) => {
+    const s = discRun[tab + '|' + item];
+    const days = s ? (s.since === histFrom ? s.days + '+ zile' : s.days + (s.days === 1 ? ' zi' : ' zile')) : '';
+    return ` <span style="color:${col.ADDED};font-size:11px;" title="reducere activă${s ? ' din ' + s.since : ''}">−${disc}%${days ? ' · ' + days : ''}</span>`;
+  };
+
   for (const r of OWN_REPORTS) {
     const map = ss.getSheetByName(r.map); if (!map || map.getLastRow() < 2) continue;
     const headers = map.getRange(1, 1, 1, map.getLastColumn()).getValues()[0].map(String).filter(Boolean);
@@ -292,10 +315,10 @@ function ownShopsReport() {
         if (mapped === '-') { cells.push('<td align="center" style="color:#9ca3af;">n/a</td>'); return; }
         if (mapped) mappedPerTab[i].add(mapped);
         const p = mapped ? prices[i][mapped] : undefined;
-        if (p == null && (CFG().scheduledItem(name) || CFG().scheduledItem(mapped) || CFG().scheduledTabs.includes(tab) || CFG().scheduledCategory(rowCat.cat))) { cells.push('<td align="center" style="color:#d1d5db;" title="produs cu program – nu e vizibil acum, nu se poate verifica">–</td>'); return; }
+        if (p == null && (CFG().scheduledItem(name) || CFG().scheduledItem(mapped) || CFG().scheduledTabs.includes(tab) || CFG().scheduledCategory(rowCat.cat))) { cells.push('<td></td>'); return; }                                                                    // scheduled product: nothing to check, nothing to show
         if (p == null) { cells.push(`<td align="center" style="color:${col.up};font-weight:700;">X</td>`); notes.push(`${platform(tab)}: lipsă`); bad = true; return; }
         (p.oos ? oosOn : stockOn).push(tab);
-        const tag = (unreviewed ? ' <span style="color:#d97706;font-size:11px;" title="potrivire AI nerevizuită">≈</span>' : '') + (p.disc ? ` <span style="color:${col.ADDED};font-size:11px;">−${p.disc}%</span>` : '')
+        const tag = (unreviewed ? ' <span style="color:#d97706;font-size:11px;" title="potrivire AI nerevizuită">≈</span>' : '') + (p.disc ? discTag(tab, mapped, p.disc) : '')
                   + (p.oos ? ` <span style="color:${col.REMOVED};font-size:11px;">epuizat</span>` : '');
         const nameDiff = cosmeticKey(mapped) !== cosmeticKey(name);
         const nameTag = nameDiff ? ` <span style="color:#d97706;font-size:11px;" title="numele de pe platformă diferă de lista master">nume: ${esc(mapped)}</span>` : '';

@@ -88,6 +88,7 @@ function highlightManual() {
   });
 
   highlightGuideTab_();
+  addTabNotes();
   Logger.log('Colorate: ' + done.join(', ') + (missing.length ? ' | taburi negasite: ' + missing.join(', ') : ''));
   try { ss.toast('Taburile de editat sunt verzi. Vezi tabul "' + HL_GUIDE + '".', 'Gata', 8); } catch (e) {}
 }
@@ -139,4 +140,61 @@ function highlightGuideTab_() {
   sh.getRange(20, 1).setFontWeight('bold');
   sh.setTabColor(HL.tabManual);
   sh.setFrozenRows(0);
+}
+
+// ---------- tab notes ----------
+// A note on cell A1 of every tab: what the tab is, which function writes it and when, what you do in it, and which function to run
+// after you change something. The block between [TAB] and [/TAB] is rewritten on every run; any other note already on A1 is kept below it.
+// Run addTabNotes() (menu Acces > Adauga notite pe taburi). Also runs at the end of highlightManual().
+var HL_MASTER_NOTE = 'MASTER pentru raportul „Verificare magazine proprii” (ownShopsReport, OwnShops.gs, zilnic la 13:00).\n' +
+  'TU EDITEZI: coloana A (nume de referință) și B (preț de referință). Coloanele C… = numele exact de pe fiecare platformă: le completează scriptul, tu le corectezi, pui "-" dacă produsul nu se vinde acolo, ștergi ≈ după verificare.\n' +
+  'DUPĂ ce schimbi ceva: o simplă schimbare de nume sau preț NU cere nicio funcție (raportul de la 13:00 o ia singur). Produs nou: adaugi rândul (A, B) și rulezi buildRefSheets (OwnShops.gs) ca să primești sugestii pentru platforme. Platformă sau tab nou: syncMasterColumns (OwnShops.gs).';
+
+function hlTabNotes_() {
+  return {
+    'Ce editez': 'Ghid: ce tab-uri editezi și ce scrie scriptul. Se rescrie la rularea highlightManual (Highlight.gs). Nu scrie aici.',
+    'Listings': 'TAB GENERAT: toate produsele tuturor magazinelor (ale noastre + concurență), un rând pe produs pe platformă.\nCine îl scrie: buildListings (Listings.gs), automat la finalul dailyCheck (10:00) sau din meniu Acces → Reconstruieste tabul Listings.\nTU: NU editezi. Filtrezi din antet (Tip / Brand / Platformă / Categorie).\nNu cere nicio funcție după modificări în alte taburi: se reface la următoarea rulare.',
+    'Competitors': 'LISTA MAGAZINELOR URMĂRITE (portocaliu = ale noastre, verde = concurenți).\nTU EDITEZI coloanele A:F (brand, linkuri, Activ). Status (G) îl scrie scriptul. Pașii pentru un concurent nou sunt în dreapta (I:J).\nDUPĂ orice modificare: meniu Acces → Completeaza lista Competitors (populateCompetitors / syncCompetitors, Code.gs). Se rulează și singur la începutul dailyCheck (10:00).',
+    'CompMap': 'ECHIVALENTELE produselor noastre la concurență. Coloana A = produsele noastre (le adaugă syncCompMapProducts, Matching.gs; nu le edita). Celulă = numele exact al produsului la concurent.\nTU: celulele colorate (~ / ≈) = sugestii: verde ștergi doar semnul, galben verifici, roșu ștergi celula sau scrii "-".\nDUPĂ ce editezi: Acces → Marcheaza CompMap (annotateCompMap, Listings.gs), apoi buildMatrix (Code.gs).\nProdus nou al nostru: syncCompMapProducts, apoi prefillCompMap (Matching.gs). Concurent nou: coloana se adaugă singură.',
+    'MatchMatrix': 'TAB CU FORMULE: Min / Medie piață, „Noi vs medie”, Cel mai ieftin. Îl scrie buildMatrix (Code.gs). NU edita.\nRulezi buildMatrix după ce modifici CompMap (un concurent nou o rulează singur).',
+    'Reports': 'ISTORICUL schimbărilor la concurență (preț, produs nou, retras, redenumit, reducere). Îl scrie dailyCheck (Code.gs) zilnic la 10:00; emailul zilnic se face din rândurile noi. NU edita. Nu rula resetAll (Code.gs): golește tot.',
+    'History': 'Un rând pe produs pe zi (preț + reducere), pentru toate magazinele. Îl scrie dailyCheck (10:00). Se folosește la „zile de reducere” din raportul Magazine proprii. NU edita; crește în timp.',
+    'RunLog': 'Starea fiecărui magazin la fiecare rulare: OK / INITIAL BASELINE / FETCH FAILED. Îl scrie dailyCheck (10:00). Aici verifici dacă un magazin nu mai e citit (FETCH FAILED). NU edita.',
+    'Meta': 'Rating, recenzii, taxă de livrare, timp de livrare per magazin (Glovo / Wolt / Bolt). Îl scriu citirea meniului și refreshMeta (Code.gs); îl folosește weeklyMetaReport (Email.gs, luni 09:00). NU edita.',
+    '_Snapshot': 'Starea de ieri a tuturor produselor: dailyCheck o compară cu azi ca să vadă ce s-a schimbat. Tab ascuns. NU edita. Dacă îl golești (resetAll, Code.gs), următoarea rulare e „baseline” și nu raportează nimic.',
+    '_Removed': 'Produse de la concurență dispărute din meniu (cu ultimul preț și data), păstrate 60 de zile (setarea forget_removed_days). Dacă revin în acest interval, emailul zice REVENIT în loc de ADĂUGAT. Tab ascuns. NU edita și nu șterge.',
+    'Settings': 'SETĂRI. Editezi doar coloana B (Valoare). Se citesc la fiecare rulare, deci de obicei NU rulezi nicio funcție.\nExcepții: setare nouă adăugată în cod → setupSettings (Code.gs); tabelul de acces E:I → după modificare Acces → Aplica accesul din Settings (applyAccess, Guard.gs); orele de rulare → installTriggers (Code.gs).',
+    'TwoGuys Delivery': HL_MASTER_NOTE,
+    'Smash Delivery': HL_MASTER_NOTE,
+    'TwoGuys Home': HL_MASTER_NOTE + '\nAici: Burgerbrasov + Mypassage; "-" = nu se vinde la ridicare.',
+    'Breakfast': HL_MASTER_NOTE + '\nSe reface cu rebuildBreakfastMaster (OwnShops.gs), doar miercuri–vineri între 10:00 și 15:00 (după dailyCheck de la 10:00).',
+    'MASTER Twoguys': 'LISTA PRODUSELOR magazinului (Mypassage) + imagini. Fiecare utilizator editează doar coloanele din tabelul de acces (Settings E:I).\nFormatare: styleMypassage (Style.gs), după schimbări mari de date.\nDacă un script scrie în acest tab: Acces → Reimprospateaza snapshot-urile (refreshSnapshots, Guard.gs).',
+    'Map': 'Mapare VECHE (prima versiune, scrisă de prefillMap, Matching.gs). Rapoartele curente folosesc CompMap și taburile master. NU edita.',
+    'Channels': 'Comparație de prețuri între canalele noastre și site (coloanele Δ%). Îl citește raportul săptămânal (Email.gs). Conține formule: NU edita.'
+  };
+}
+
+function addTabNotes() {
+  const ss = SpreadsheetApp.getActive(), notes = hlTabNotes_(), cfgOf = {};
+  COMPETITORS.forEach(c => cfgOf[c.sheet] = c);
+  const own = new Set(OWN_CHANNELS.concat(['Burgerbrasov']));
+  let done = 0;
+  ss.getSheets().forEach(sh => {
+    const name = sh.getName();
+    let text = notes[name];
+    if (!text && cfgOf[name]) {
+      const c = cfgOf[name];
+      text = (own.has(name) ? 'TAB DE DATE – magazin al nostru. ' : 'TAB DE DATE – concurent. ') + 'Conține meniul citit de script' + (c.fn ? ' cu ' + c.fn + '(' + c.url + ')' : ' prin formule IMPORTXML (nu șterge formulele din primele rânduri)') + '.\n' +
+        'Se rescrie zilnic la dailyCheck (Code.gs, 10:00)' + (c.midday ? ' și la middayRefresh (12:00, Bolt)' : '') + '. NU edita.\n' +
+        'Linkul sau oprirea urmăririi se schimbă în tabul Competitors, nu aici. Tabul poate fi ascuns (Acces → Ascunde taburile de date); scriptul îl citește oricum.';
+    }
+    if (!text && name.indexOf(AC_SNAP) === 0) text = 'Copie tehnică a tabului „' + name.slice(AC_SNAP.length) + '”, folosită de protecția din Guard.gs (accessGuard). Ascuns. NU edita.';
+    if (!text && name.indexOf(AC_ORIG) === 0) text = 'Valoarea și culoarea inițială a celulelor atinse de utilizatori în „' + name.slice(AC_ORIG.length) + '” (Guard.gs). Gol = nimeni nu a editat încă; se golește și când un admin editează sau reîmprospătezi snapshot-urile. Ascuns. NU edita.';
+    if (!text || sh.getMaxRows() < 1 || sh.getMaxColumns() < 1) return;
+    const cell = sh.getRange(1, 1), rest = String(cell.getNote() || '').replace(/\[TAB\][\s\S]*?\[\/TAB\]\n*/, '').trim();
+    cell.setNote('[TAB]\n' + text + '\n[/TAB]' + (rest ? '\n\n' + rest : ''));
+    done++;
+  });
+  Logger.log('Notițe pe ' + done + ' taburi');
+  try { ss.toast('Notițe adăugate pe ' + done + ' taburi (celula A1).', 'Gata', 8); } catch (e) {}
 }

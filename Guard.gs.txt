@@ -296,6 +296,7 @@ function onOpen() {
     .addItem('Arata toate taburile', 'showAllTabs')
     .addSeparator()
     .addItem('Coloreaza taburile de editat', 'highlightManual')
+    .addItem('Adauga notite pe taburi', 'addTabNotes')
     .addSeparator()
     .addItem('Completeaza lista Competitors', 'populateCompetitors')
     .addItem('Reconstruieste tabul Listings', 'buildListings')
