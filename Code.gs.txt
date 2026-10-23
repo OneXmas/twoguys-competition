@@ -18,7 +18,7 @@ function FB_PRICE(restaurantUid, itemId) {
 
 
 
-// TEST WOLT =WOLT_MENU("=WOLT_MENU("link")
+// TEST WOLT =WOLT_MENU("link")
 // TEST GLOVO =GLOVO_MENU("link")
 // TEST BOLT =BOLT_MENU("link")
 
