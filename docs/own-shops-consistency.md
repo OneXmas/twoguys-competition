@@ -61,3 +61,5 @@ Delivery prices are intentionally higher than home/pick-up prices (platform comm
 - Next: out-of-stock-on-one-platform check (Bolt known; check Wolt), then hourly check only if needed.
 
 - 2026-10-14 (later): out-of-stock check live (Bolt + Wolt disabled_info; Glovo marker unknown until an item is sold out there). Wolt tabs now carry Stoc (E) and Original price (F). Name-difference flag kept for Report B too; Wolt "Noi" column kept. All three files deployed.
+
+- 2026-10-24: one layout for every platform/website tab (A Item | B Original price | C Price | D Discount % | E Category | F Stoc | G ID; see manual-tabs.md). Wolt/Bolt Price and Original price now include the required option (+5 can in combos), so list prices match Glovo and the reference; Wolt's "15% off for selected items" campaign is read from the venue page data (item discount only, options excluded). The report rule is unchanged: Original price = reference → ✓ plus the −% tag; a different Original price is flagged. One-time: migrateLayout (Code.gs); Wolt/Bolt tabs get a silent new baseline in dailyCheck (RunLog: BASELINE (format nou)).

@@ -24,50 +24,60 @@ function FB_PRICE(restaurantUid, itemId) {
 
 
 
+// ===== STANDARD TAB LAYOUT =====
+// Every platform / website tab written by a reader (Glovo, Wolt, Bolt, WooCommerce, schema.org, Foodbooking, restaurant site) has the same
+// columns: A Item | B Original price (before discount) | C Price (what the client pays) | D Discount % | E Category | F Stoc | G ID.
+// Only the two IMPORTXML tabs (Buffaloeat, Egg&Smash) keep their own layout: their formulas live in the sheet.
+const STD_HEADER = ['Item', 'Original price', 'Price', 'Discount %', 'Category', 'Stoc', 'ID'];
+const STD_COLS = { nameCol: 'A', origCol: 'B', priceCol: 'C', promoCol: 'D', catCol: 'E', stockCol: 'F', idCol: 'G' };
+const STD_FN = /^(GLOVO|WOLT|BOLT|WOO|JSONLD|FB|SITE)_MENU$/;
+// one row of the standard layout: the original price falls back to the price, an empty discount stays empty
+const stdRow = (name, price, orig, disc, cat, stoc, id) => [name, orig > price ? orig : price, price, disc || '', cat || '', stoc || '', id == null ? '' : id];
+
 // ===== CONFIG =====
 const COMPETITORS = [
   // own sites
-  { sheet: 'Burgerbrasov', nameCol: 'A', priceCol: 'B', fn: 'SITE_MENU', url: 'https://burgerbrasov.ro/' },
-  { sheet: 'Mypassage',    nameCol: 'A', priceCol: 'B', idCol: 'D', origCol: 'E', catCol: 'C', fn: 'WOO_MENU', url: 'https://mypassage.ro' },
+  { sheet: 'Burgerbrasov', ...STD_COLS, fn: 'SITE_MENU', url: 'https://burgerbrasov.ro/' },
+  { sheet: 'Mypassage',    ...STD_COLS, fn: 'WOO_MENU', url: 'https://mypassage.ro' },
   // own platforms
-  { sheet: 'TwoGuys - G',  nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/two-guys-delivery' },
-  { sheet: 'TwoGuys - W',  nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', stockCol: 'E', origCol: 'F', fn: 'WOLT_MENU',  url: 'https://wolt.com/ro/rou/brasov/restaurant/two-guys-delivery-67dac8fa3d53c71097395624' },
-  { sheet: 'TwoGuys - B',  nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/110855-two-guys-delivery/', midday: true },
-  { sheet: 'TheSmash - G', nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/the-smash-by-two-guys-brv' },
-  { sheet: 'TheSmash - W', nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', stockCol: 'E', origCol: 'F', fn: 'WOLT_MENU',  url: 'https://wolt.com/en/rou/brasov/restaurant/smash-by-two-guys-67fd02d15c0da5b09cffb191' },
-  { sheet: 'TheSmash - B', nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/138455-the-smash-by-two-guys/', midday: true },
+  { sheet: 'TwoGuys - G',  ...STD_COLS, fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/two-guys-delivery' },
+  { sheet: 'TwoGuys - W',  ...STD_COLS, fn: 'WOLT_MENU',  url: 'https://wolt.com/ro/rou/brasov/restaurant/two-guys-delivery-67dac8fa3d53c71097395624' },
+  { sheet: 'TwoGuys - B',  ...STD_COLS, fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/110855-two-guys-delivery/', midday: true },
+  { sheet: 'TheSmash - G', ...STD_COLS, fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/the-smash-by-two-guys-brv' },
+  { sheet: 'TheSmash - W', ...STD_COLS, fn: 'WOLT_MENU',  url: 'https://wolt.com/en/rou/brasov/restaurant/smash-by-two-guys-67fd02d15c0da5b09cffb191' },
+  { sheet: 'TheSmash - B', ...STD_COLS, fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/138455-the-smash-by-two-guys/', midday: true },
   // own Wolt virtual brands (breakfast venues sell Wed–Fri 09–15 only; see scheduled_tabs / scheduled_categories in Settings)
-  { sheet: 'Passage by TwoGuys - W', nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', stockCol: 'E', origCol: 'F', fn: 'WOLT_MENU', url: 'https://wolt.com/en/rou/brasov/restaurant/passage-brasov-685661d3fed8b72a16338d89' },
-  { sheet: 'Br. by Passage - W',     nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', stockCol: 'E', origCol: 'F', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/breakfast-by-passage-67dac8fa3d53c71097395625' },
-  { sheet: 'Br. by TwoGuys - W',     nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', stockCol: 'E', origCol: 'F', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/breakfast-by-two-guys-67dac8fa3d53c71097395625' },
+  { sheet: 'Passage by TwoGuys - W', ...STD_COLS, fn: 'WOLT_MENU', url: 'https://wolt.com/en/rou/brasov/restaurant/passage-brasov-685661d3fed8b72a16338d89' },
+  { sheet: 'Br. by Passage - W',     ...STD_COLS, fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/breakfast-by-passage-67dac8fa3d53c71097395625' },
+  { sheet: 'Br. by TwoGuys - W',     ...STD_COLS, fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/breakfast-by-two-guys-67dac8fa3d53c71097395625' },
   // competitor sites
   { sheet: 'Buffaloeat',   nameCol: 'A', priceCol: 'B' },                                   // IMPORTXML
   { sheet: 'Egg&Smash',    nameCol: 'A', priceCol: 'B' },                                   // IMPORTXML
-  { sheet: 'Vivo',         nameCol: 'C', priceCol: 'D', idCol: 'B', catCol: 'A', fn: 'FB_MENU', url: '708b7ab6-4386-4db4-a15e-2b22d785b925' },
-  { sheet: 'Marcos',       nameCol: 'A', priceCol: 'B', catCol: 'C', fn: 'JSONLD_MENU', url: 'https://marcosburgers.ro/meniu' },
+  { sheet: 'Vivo',         ...STD_COLS, fn: 'FB_MENU', url: '708b7ab6-4386-4db4-a15e-2b22d785b925' },
+  { sheet: 'Marcos',       ...STD_COLS, fn: 'JSONLD_MENU', url: 'https://marcosburgers.ro/meniu' },
   // competitors – Glovo
-  { sheet: 'Kronburger - G',                  nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/kronburger-brv' },
-  { sheet: 'Kronburger Smoker and Grill - G', nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/kronburger-smoker-and-grill-brv' },
-  { sheet: 'Egg&Smash - G',                   nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/egg-smash-house-brv' },
-  { sheet: 'Vivo - G',                        nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/vivo-brv' },
-  { sheet: 'Smash by Vivo - G',               nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/smash-by-vivo-brv' },
-  { sheet: 'Marcos - G',                      nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/marcos-brv' },
-  { sheet: 'Dafud - G',                       nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/d-fud-dudes-food-truck-brv-1' },
-  { sheet: 'Old Jack - G',                    nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/old-jack-burger-house-br' },
-  { sheet: 'Justinn Burger Store - G',        nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/justinn-burgers-brv' },
+  { sheet: 'Kronburger - G',                  ...STD_COLS, fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/kronburger-brv' },
+  { sheet: 'Kronburger Smoker and Grill - G', ...STD_COLS, fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/kronburger-smoker-and-grill-brv' },
+  { sheet: 'Egg&Smash - G',                   ...STD_COLS, fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/egg-smash-house-brv' },
+  { sheet: 'Vivo - G',                        ...STD_COLS, fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/vivo-brv' },
+  { sheet: 'Smash by Vivo - G',               ...STD_COLS, fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/smash-by-vivo-brv' },
+  { sheet: 'Marcos - G',                      ...STD_COLS, fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/marcos-brv' },
+  { sheet: 'Dafud - G',                       ...STD_COLS, fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/d-fud-dudes-food-truck-brv-1' },
+  { sheet: 'Old Jack - G',                    ...STD_COLS, fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/old-jack-burger-house-br' },
+  { sheet: 'Justinn Burger Store - G',        ...STD_COLS, fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/justinn-burgers-brv' },
   // competitors – Wolt
-  { sheet: 'Buffaloeat - W', nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', stockCol: 'E', origCol: 'F', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/buffalo-eat-bartolomeu-6a1803da2131a0a22c74ade3' },
-  { sheet: 'Kronburger - W', nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', stockCol: 'E', origCol: 'F', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/kronburger-smoker-grill-68f795b430c473d5f5db545f' },
-  { sheet: 'Egg&Smash - W',  nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', stockCol: 'E', origCol: 'F', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/egg-smash-house-6a2912efdcc201a2ab34633d' },
-  { sheet: 'Dafud - W',      nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', stockCol: 'E', origCol: 'F', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/dafud-67dac78a5416f96b8fd407b1' },
-  { sheet: 'Old Jack - W',   nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', stockCol: 'E', origCol: 'F', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/old-jack-burger-house-67dac60c5416f96b8fd406c0' },
-  { sheet: 'Ramore - W',     nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', stockCol: 'E', origCol: 'F', fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/ramore-fresh-food-braov-6a61e5749d5d06a0265534bb' },
+  { sheet: 'Buffaloeat - W', ...STD_COLS, fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/buffalo-eat-bartolomeu-6a1803da2131a0a22c74ade3' },
+  { sheet: 'Kronburger - W', ...STD_COLS, fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/kronburger-smoker-grill-68f795b430c473d5f5db545f' },
+  { sheet: 'Egg&Smash - W',  ...STD_COLS, fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/egg-smash-house-6a2912efdcc201a2ab34633d' },
+  { sheet: 'Dafud - W',      ...STD_COLS, fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/dafud-67dac78a5416f96b8fd407b1' },
+  { sheet: 'Old Jack - W',   ...STD_COLS, fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/old-jack-burger-house-67dac60c5416f96b8fd406c0' },
+  { sheet: 'Ramore - W',     ...STD_COLS, fn: 'WOLT_MENU', url: 'https://wolt.com/ro/rou/brasov/restaurant/ramore-fresh-food-braov-6a61e5749d5d06a0265534bb' },
   // competitors – Bolt
-  { sheet: 'Egg&Smash - B',       nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/832880-egg-smash-house/', midday: true },
-  { sheet: 'Marcos - B',          nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/196690-marcos-burger/', midday: true },
-  { sheet: 'Dafud - B',           nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/203900-dafud/', midday: true },
-  { sheet: 'Old Jack - B',        nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/1132692-old-jack-burger-house/', midday: true },
-  { sheet: 'Romanian Burger - B', nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/189882-romanian-burger/', midday: true },
+  { sheet: 'Egg&Smash - B',       ...STD_COLS, fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/832880-egg-smash-house/', midday: true },
+  { sheet: 'Marcos - B',          ...STD_COLS, fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/196690-marcos-burger/', midday: true },
+  { sheet: 'Dafud - B',           ...STD_COLS, fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/203900-dafud/', midday: true },
+  { sheet: 'Old Jack - B',        ...STD_COLS, fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/1132692-old-jack-burger-house/', midday: true },
+  { sheet: 'Romanian Burger - B', ...STD_COLS, fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/189882-romanian-burger/', midday: true },
 ];
 
 const OWN_CHANNELS = ['Mypassage', 'TwoGuys - G', 'TwoGuys - W', 'TwoGuys - B', 'TheSmash - G', 'TheSmash - W', 'TheSmash - B',
@@ -79,14 +89,14 @@ const OWN_CHANNELS = ['Mypassage', 'TwoGuys - G', 'TwoGuys - W', 'TwoGuys - B', 
 //   A Brand | B Activ (checkbox) | C Glovo | D Wolt | E Bolt | F Website propriu | G Status (written by the script)
 const REGISTRY_SHEET = 'Competitors';
 const REGISTRY_PLATFORMS = {
-  G: { col: 3, fn: 'GLOVO_MENU', nameCol: 'B', priceCol: 'C', origCol: 'D', catCol: 'A', promoCol: 'E', re: /glovoapp\.com/i },
-  W: { col: 4, fn: 'WOLT_MENU',  nameCol: 'A', priceCol: 'B', idCol: 'D', catCol: 'C', stockCol: 'E', origCol: 'F', re: /wolt\.com/i },
-  B: { col: 5, fn: 'BOLT_MENU',  nameCol: 'A', priceCol: 'B', origCol: 'C', stockCol: 'D', catCol: 'E', midday: true, re: /food\.bolt\.eu/i },
+  G: { col: 3, ...STD_COLS, fn: 'GLOVO_MENU', re: /glovoapp\.com/i },
+  W: { col: 4, ...STD_COLS, fn: 'WOLT_MENU',  re: /wolt\.com/i },
+  B: { col: 5, ...STD_COLS, fn: 'BOLT_MENU',  midday: true, re: /food\.bolt\.eu/i },
 };
 // own website: WooCommerce shops (wp-json) first, then pages with schema.org Menu data; anything else needs a custom reader
 const REGISTRY_SITE_READERS = [
-  { fn: 'WOO_MENU',    nameCol: 'A', priceCol: 'B', idCol: 'D', origCol: 'E', catCol: 'C' },
-  { fn: 'JSONLD_MENU', nameCol: 'A', priceCol: 'B', catCol: 'C' },
+  { ...STD_COLS, fn: 'WOO_MENU' },
+  { ...STD_COLS, fn: 'JSONLD_MENU' },
 ];
 const REGISTRY_COLS = 7;
 const HL_COLORS_REG = { headEdit: '#1E8E3E', headScript: '#9AA0A6', tintEdit: '#E6F4EA', tabManual: '#34A853' };
@@ -261,7 +271,7 @@ function syncCompetitors() {
       try { data = this[cfg.fn](cfg.url); } catch (e) { data = 'ERR ' + e.message; }
     }
     if (Array.isArray(data) && data.length > 1) {
-      sh.getRange(1, 1, data.length, data[0].length).setValues(data); writeMeta(ss, r.tab); styleDataTab_(sh);
+      writeDataTab_(sh, data); writeMeta(ss, r.tab); styleDataTab_(sh);
       say(r.row, `${r.p}: adăugat ${data.length - 1} produse`); added = true;
     } else say(r.row, `${r.p}: nu s-au putut citi produsele (${String(data).slice(0, 50)}) – se reîncearcă`);
     Utilities.sleep(r.p === 'B' ? 5000 : 1000);
@@ -315,8 +325,7 @@ function refreshSources() {
       LAST_META = null;
       try { data = this[cfg.fn](cfg.url); } catch (e) { data = 'ERR ' + e.message; }
       if (Array.isArray(data) && data.length > 1) {
-        sh.getRange(1, 1, sh.getMaxRows(), data[0].length).clearContent();
-        sh.getRange(1, 1, data.length, data[0].length).setValues(data);
+        writeDataTab_(sh, data);
         writeMeta(ss, cfg.sheet);                                   // Glovo / Wolt rating & fee (Bolt is written by middayRefresh)
         status[cfg.sheet] = '';
       } else {
@@ -349,6 +358,35 @@ function refreshSources() {
   }
   return status;
 }
+// Writes a reader's rows into its tab: the old content goes first, so a tab still in an older layout is replaced completely.
+// Column D (Discount %) is a plain number: a percent format left over from an older layout would show 15 as 1500%.
+function writeDataTab_(sh, data) {
+  sh.getRange(1, 1, sh.getMaxRows(), data[0].length).clearContent();
+  sh.getRange(1, 1, data.length, data[0].length).setValues(data);
+  if (data[0].length >= 4) sh.getRange(2, 4, Math.max(sh.getMaxRows() - 1, 1), 1).setNumberFormat('0');
+}
+
+// A tab written by a standard reader but still in the old layout (header B1 is not "Original price").
+const oldLayoutTab_ = (sh, cfg) => STD_FN.test(cfg.fn || '') && String(sh.getRange(1, 2).getValue()) !== STD_HEADER[1];
+
+// One-time, right after pasting the standard-layout version: rewrites every platform / website tab in the new layout (Bolt tabs too,
+// which dailyCheck leaves to middayRefresh). Tabs already converted are skipped, so if the 6-minute limit stops it, run it again.
+function migrateLayout() {
+  const ss = SpreadsheetApp.getActive();
+  let done = 0, todo = 0;
+  for (const cfg of COMPETITORS) {
+    if (!STD_FN.test(cfg.fn || '') || !cfg.url) continue;
+    const sh = ss.getSheetByName(cfg.sheet); if (!sh) continue;
+    if (!oldLayoutTab_(sh, cfg)) { Logger.log(`✓ ${cfg.sheet}: already in the new layout`); continue; }
+    LAST_META = null;
+    let data; try { data = this[cfg.fn](cfg.url); } catch (e) { data = 'ERR ' + e.message; }
+    if (Array.isArray(data) && data.length > 1) { writeDataTab_(sh, data); done++; Logger.log(`✅ ${cfg.sheet}: ${data.length - 1} produse`); }
+    else { todo++; Logger.log(`❌ ${cfg.sheet}: ${String(data).slice(0, 60)} – run migrateLayout again`); }
+    Utilities.sleep(cfg.midday ? 5000 : 1000);                       // Bolt rate-limits bursts
+  }
+  Logger.log(`migrateLayout: ${done} tabs converted, ${todo} to retry`);
+}
+
 const RENAME_THRESHOLD = 0.8;
 
 
@@ -472,6 +510,7 @@ function dailyCheck() {
   const rep = ss.getSheetByName(REPORT_SHEET), snap = ss.getSheetByName(SNAP_SHEET), log = ss.getSheetByName(LOG_SHEET);
   ensureHeader(rep, REPORT_HEADERS);
   const idTabs = new Set(COMPETITORS.filter(c => c.idCol).map(c => c.sheet));
+  const props = PropertiesService.getScriptProperties();
 
   // snapshot: Competitor | Key | Item | Price | Disc % | First seen | Missing
   // tabs without an ID column are keyed by cosmeticKey(name), so "OUĂ BENEDICT" and "Ouă Benedict" are the same item
@@ -498,12 +537,19 @@ function dailyCheck() {
     if (!sh) { logRows.push([today, cfg.sheet, 0, 'SHEET NOT FOUND']); continue; }
     const last = sh.getLastRow();
     if (last < 2) { Logger.log(`❌ ${cfg.sheet}: tab is empty`); continue; }
+    if (oldLayoutTab_(sh, cfg)) {                                        // not converted yet (Bolt tabs wait for middayRefresh): do not read it with the new columns
+      logRows.push([today, cfg.sheet, 0, 'FETCH FAILED (layout vechi – rulează migrateLayout)']);
+      Object.values(old[cfg.sheet] || {}).forEach(r => newSnap.push([cfg.sheet, r.key, r.name, r.price, r.disc, r.first, r.miss, r.cat || '']));
+      continue;
+    }
     const col = c => last > 1 ? sh.getRange(`${c}2:${c}${last}`).getValues().flat() : [];
     const names = col(cfg.nameCol), prices = col(cfg.priceCol), ids = cfg.idCol ? col(cfg.idCol) : [], cats = cfg.catCol ? col(cfg.catCol) : [], promos = cfg.promoCol ? col(cfg.promoCol) : [];
 
     const origs = cfg.origCol ? col(cfg.origCol) : [];
     const cur = {};
-    const prev = old[cfg.sheet];
+    // Wolt / Bolt prices now include the required option (the can in a combo) and the Wolt campaign: one silent new baseline, no price alerts
+    const rebase = /^(WOLT|BOLT)_MENU$/.test(cfg.fn || '') && !props.getProperty('layout2_' + cfg.sheet);
+    const prev = rebase ? undefined : old[cfg.sheet], was = old[cfg.sheet] || {};
     names.forEach((n, k) => {
       const name = String(n || '').replace(/[ \s]+/g, ' ').trim(), shown = Number(prices[k]);
       if (!name || F.ignoreItem(name) || isNaN(shown) || shown <= 0) return;
@@ -512,7 +558,7 @@ function dailyCheck() {
       const badge = promoPct(promos[k]);
       const disc = list > shown ? (badge > 0 ? badge : Math.round((1 - shown / list) * 100)) : 0;   // platform badge wins over our own rounding
       const key = cfg.idCol && ids[k] !== '' && ids[k] != null ? String(ids[k]) : cosmeticKey(name);
-      cur[key] = { key, name, price: list, shown, disc, first: (prev && prev[key] && prev[key].first) || today, miss: 0, cat: String(cats[k] || '').trim() };
+      cur[key] = { key, name, price: list, shown, disc, first: (was[key] && was[key].first) || today, miss: 0, cat: String(cats[k] || '').trim() };
     });
     const count = Object.keys(cur).length;
     const errCount = prices.filter(p => typeof p === 'string' && p.startsWith('#')).length;
@@ -522,12 +568,13 @@ function dailyCheck() {
 
     if (failed) {
       logRows.push([today, cfg.sheet, count, 'FETCH FAILED' + (fetchErr ? ` (${fetchErr})` : errCount ? ` (${errCount} error cells)` : '')]);
-      Object.values(prev || {}).forEach(r => newSnap.push([cfg.sheet, r.key, r.name, r.price, r.disc, r.first, r.miss, r.cat || '']));
+      Object.values(was).forEach(r => newSnap.push([cfg.sheet, r.key, r.name, r.price, r.disc, r.first, r.miss, r.cat || '']));
       continue;
     }
 
+    if (rebase) props.setProperty('layout2_' + cfg.sheet, '1');
     if (!prev) {
-      logRows.push([today, cfg.sheet, count, 'INITIAL BASELINE']);
+      logRows.push([today, cfg.sheet, count, rebase ? 'BASELINE (format nou)' : 'INITIAL BASELINE']);
     } else {
       let tabChanges = [];
       const push = (type, item, oldP, newP) => {
@@ -745,7 +792,7 @@ function GLOVO_MENU(storeUrl) {
     headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36' }
   }).getContentText();
   const num = t => parseFloat(t.replace(/[^\d,]/g, '').replace(',', '.'));
-  const rows = [['Section', 'Item', 'Price', 'Original price', 'Promo %']];
+  const rows = [STD_HEADER];
   const re = /List_title__\w+"[^>]*>([^<]+)<\/h3>|ItemRow_titleContainer__\w+"><p[^>]*>([^<]+)<\/p>[\s\S]*?ItemRow_priceContainer__\w+">(.*?)<\/div>/g;
   let section = '', m;
   while ((m = re.exec(html)) !== null) {
@@ -753,7 +800,7 @@ function GLOVO_MENU(storeUrl) {
     const spans = [...m[3].matchAll(/<span[^>]*>([^<]+)<\/span>/g)].map(x => x[1]);
     const price = num(spans[0] || ''), orig = spans[1] ? num(spans[1]) : '';
     const promo = (m[0].match(/ItemRow_tagsContainer[\s\S]*?(-\d+%)/) || [])[1] || '';   // Glovo's own badge, e.g. -10% (its prices round differently)
-    rows.push([section, m[2].trim(), price, orig, promo ? parseInt(promo.replace(/[^\d]/g, ''), 10) : '']);   // plain number (30): a '-30%' text becomes -0.3 in the sheet
+    rows.push(stdRow(decode(m[2]), price, orig, promo ? parseInt(promo.replace(/[^\d]/g, ''), 10) : '', decode(section)));   // plain number (30): a '-30%' text becomes -0.3 in the sheet
   }
   LAST_META = glovoMeta(html);
   return rows.length > 1 ? rows : 'NO ITEMS – check URL or blocked';
@@ -777,12 +824,16 @@ function WOO_MENU(siteUrl) {
   };
   const products = fetchAll('type=simple') , variations = fetchAll('type=variation');
   if (!products) return 'HTTP error';
-  const rows = [['Item', 'Price', 'Category', 'ID', 'Original price']];
+  const rows = [STD_HEADER];
   // WooCommerce sends names HTML-encoded ("Steak &#038; Eggs", "The &#8217;Merican"): decode() turns them into plain text
-  products.forEach(p => rows.push([decode(p.name), Number(p.prices.price) / minor(p), p.categories.map(c => decode(c.name)).join(', '), p.id, Number(p.prices.regular_price) / minor(p)]));
+  const wooRow = (name, x, cats, id) => {
+    const price = Number(x.prices.price) / minor(x), reg = Number(x.prices.regular_price) / minor(x);
+    return stdRow(name, price, reg, reg > price ? Math.round((1 - price / reg) * 100) : 0, cats.map(c => decode(c.name)).join(', '), '', id);
+  };
+  products.forEach(p => rows.push(wooRow(decode(p.name), p, p.categories, p.id)));
   (variations || []).forEach(v => {
     const opt = decode((v.variation || '').replace(/^[^:]+:\s*/, ''));       // "Extra: Cu parmezan" -> "Cu parmezan"
-    rows.push([`${decode(v.name)} – ${opt}`, Number(v.prices.price) / minor(v), (v.categories || []).map(c => decode(c.name)).join(', '), v.id, Number(v.prices.regular_price) / minor(v)]);
+    rows.push(wooRow(`${decode(v.name)} – ${opt}`, v, v.categories || [], v.id));
   });
   return rows;
 }
@@ -849,8 +900,7 @@ function middayRefresh() {
       Logger.log(`${cfg.sheet}: kept previous data (${String(data).slice(0, 60)}${Array.isArray(data) ? ', ' + (data.length - 1) + ' items' : ''})`);
       continue;                                   // closed / partial menu → keep yesterday's full list
     }
-    sh.getRange(1, 1, sh.getMaxRows(), data[0].length).clearContent();
-    sh.getRange(1, 1, data.length, data[0].length).setValues(data);
+    writeDataTab_(sh, data);
     writeMeta(ss, cfg.sheet);
   }
 }

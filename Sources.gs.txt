@@ -1,6 +1,6 @@
 function JSONLD_MENU(pageUrl) {
   const html = UrlFetchApp.fetch(pageUrl, { muteHttpExceptions: true, headers: { 'User-Agent': 'Mozilla/5.0' } }).getContentText();
-  const rows = [['Item', 'Price', 'Section']];
+  const rows = [STD_HEADER];
   const re = /<script type="application\/ld\+json">\s*([\s\S]*?)\s*<\/script>/g;
   let m;
   while ((m = re.exec(html)) !== null) {
@@ -9,8 +9,8 @@ function JSONLD_MENU(pageUrl) {
     for (const sec of d.hasMenuSection || []) {
       for (const it of sec.hasMenuItem || []) {
         const offers = Array.isArray(it.offers) ? it.offers : it.offers ? [it.offers] : [];
-        if (offers.length > 1) offers.forEach(o => rows.push([`${it.name} – ${o.name}`, Number(o.price), sec.name]));
-        else rows.push([it.name, Number(offers[0] ? offers[0].price : it.price), sec.name]);
+        if (offers.length > 1) offers.forEach(o => rows.push(stdRow(`${it.name} – ${o.name}`, Number(o.price), 0, 0, sec.name)));
+        else rows.push(stdRow(it.name, Number(offers[0] ? offers[0].price : it.price), 0, 0, sec.name));
       }
     }
   }
@@ -44,24 +44,39 @@ function BOLT_MENU(storeUrl) {
   if (!m) return 'BAD URL – expected .../p/<id>-name/';
   const providerId = m[1];
   const menu = boltGet('getMenuCategories', { provider_id: providerId });
-  const items = Object.values(menu.items || {});
-  const cats = {};
-  items.filter(i => i.type === 'category').forEach(c => cats[c.id] = { name: c.name.value, index: c.index });
-  const dishes = items.filter(i => i.type === 'dish' && i.price)
-    .sort((a, b) => ((cats[a.parent_id] || {}).index - (cats[b.parent_id] || {}).index) || (a.index - b.index));
-  // a dish can be listed under several categories (e.g. "Popular"): keep the first occurrence only
-  const rows = [['Item', 'Price', 'Original price', 'Stoc', 'Category']], seen = new Set();
-  dishes.forEach(d => {
-    const name = d.name.value.replace(/\s+/g, ' ').trim();
-    if (seen.has(name)) return;
-    seen.add(name);
-    const p = d.price, orig = p.original_price && p.original_price.value > p.value ? p.original_price.value : '';
-    rows.push([name, p.value, orig, d.availability === 'in_stock' ? '' : 'epuizat', (cats[d.parent_id] || {}).name || '']);
-  });
+  const rows = boltRows_(menu);
   if (rows.length < 2) return 'NO ITEMS';
 
   Utilities.sleep(1500);
   LAST_META = boltMeta(providerId);
+  return rows;
+}
+
+// Standard rows of a Bolt menu. The price the app shows includes the cheapest choice of every required option group (the can in a
+// combo), so Original price / Price = dish + that choice; Discount % = the discount Bolt sets on the dish itself.
+function boltRows_(menu) {
+  const all = menu.items || {}, items = Object.values(all);
+  const cats = {};
+  items.filter(i => i.type === 'category').forEach(c => cats[c.id] = { name: c.name.value, index: c.index });
+  const required = d => (d.child_ids || []).reduce((sum, id) => {
+    const g = all[id];
+    if (!g || !g.is_required) return sum;
+    const ps = (g.child_ids || []).map(k => all[k]).filter(Boolean).map(o => o.price ? Number(o.price.value) || 0 : 0);
+    return sum + (ps.length ? Math.min(...ps) * (g.type === 'option_multi_select_group' ? (g.min || 1) : 1) : 0);
+  }, 0);
+  const round2 = x => Math.round(x * 100) / 100;
+  const dishes = items.filter(i => i.type === 'dish' && i.price)
+    .sort((a, b) => ((cats[a.parent_id] || {}).index - (cats[b.parent_id] || {}).index) || (a.index - b.index));
+  // a dish can be listed under several categories (e.g. "Popular"): keep the first occurrence only
+  const rows = [STD_HEADER], seen = new Set();
+  dishes.forEach(d => {
+    const name = d.name.value.replace(/\s+/g, ' ').trim();
+    if (seen.has(name)) return;
+    seen.add(name);
+    const p = d.price, extra = required(d), orig = p.original_price && p.original_price.value > p.value ? p.original_price.value : p.value;
+    rows.push(stdRow(name, round2(p.value + extra), round2(orig + extra), orig > p.value ? Math.round((1 - p.value / orig) * 100) : 0,
+      (cats[d.parent_id] || {}).name || '', d.availability === 'in_stock' ? '' : 'epuizat'));
+  });
   return rows;
 }
 
@@ -82,18 +97,18 @@ function FB_MENU(restaurantUid) {
     { muteHttpExceptions: true }).getContentText();
   const menu = JSON.parse(json);
   if (!menu.categories) return 'NO ITEMS';
-  const rows = [['Category', 'ID', 'Item', 'Price']];
+  const rows = [STD_HEADER];
   const seen = new Set();
   for (const cat of menu.categories) {
     for (const it of cat.items) {
-      rows.push([cat.name, it.id, it.name, it.price]);
+      rows.push(stdRow(it.name, it.price, 0, 0, cat.name, '', it.id));
       for (const g of it.groups || []) {
         for (const o of g.options || []) {
           if (!(o.price > 0)) continue;                          // free options aren't prices
           const key = `${g.name.trim()} | ${o.name.trim()}`;
           if (seen.has(key)) continue;                           // same extra offered on many items
           seen.add(key);
-          rows.push([`Extra: ${g.name.trim()}`, `x:${key}`, key, o.price]);
+          rows.push(stdRow(key, o.price, 0, 0, `Extra: ${g.name.trim()}`, '', `x:${key}`));
         }
       }
     }
@@ -108,12 +123,12 @@ function SITE_MENU(url) {
   if (res.getResponseCode() !== 200) return 'HTTP ' + res.getResponseCode();
   const html = res.getContentText();
   const strip = t => t.replace(/<[^>]+>/g, '').replace(/&nbsp;|\u00a0/g, ' ').replace(/&amp;/g, '&').replace(/&#8211;|&#8217;/g, "'").replace(/\s+/g, ' ').trim();
-  const rows = [['Item', 'Price']];
+  const rows = [STD_HEADER];
 
   // 1. catalogue items
   const cat = /av-catalogue-title'>([\s\S]*?)<\/div>\s*<div class='av-catalogue-price'>([\s\S]*?)<\/div>/g;
   let m;
-  while ((m = cat.exec(html)) !== null) rows.push([strip(m[1]), parseFloat(strip(m[2]).replace(',', '.'))]);
+  while ((m = cat.exec(html)) !== null) rows.push(stdRow(strip(m[1]), parseFloat(strip(m[2]).replace(',', '.'))));
 
   // 2. featured items: any <h3>NAME</h3> followed by <h4>Label: price</h4> / <h4>price</h4> before the next <h3>
   const parts = html.split(/<h3\b[^>]*>/).slice(1);
@@ -125,7 +140,7 @@ function SITE_MENU(url) {
       const mm = t.match(/^(?:([^:]+):\s*)?(\d+(?:[.,]\d+)?)\s*(lei|ron)?$/i);
       if (!mm) continue;
       const label = mm[1] ? mm[1].trim() : '';
-      rows.push([label && label.toLowerCase() !== 'burger' ? `${name} ${label}` : name, parseFloat(mm[2].replace(',', '.'))]);
+      rows.push(stdRow(label && label.toLowerCase() !== 'burger' ? `${name} ${label}` : name, parseFloat(mm[2].replace(',', '.'))));
     }
   }
   return rows.length > 1 ? rows : 'NO ITEMS';
@@ -138,18 +153,56 @@ function WOLT_MENU(venueUrl) {
   const url = `https://consumer-api.wolt.com/consumer-api/consumer-assortment/v1/venues/slug/${slug}/assortment?language=ro`;
   const res = UrlFetchApp.fetch(url, { muteHttpExceptions: true, headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' } });
   if (res.getResponseCode() !== 200) return 'HTTP ' + res.getResponseCode();
-  const d = JSON.parse(res.getContentText());
-  const catOf = {};
-  d.categories.forEach(c => (c.item_ids || []).forEach(id => catOf[id] = c.name));
-  const rows = [['Item', 'Price', 'Category', 'ID', 'Stoc', 'Original price']];
-  const seen = {};
+  const rows = woltRows_(JSON.parse(res.getContentText()), woltCampaigns_(slug));
+  LAST_META = woltMeta(venueUrl);
+  return rows;
+}
+
+// Item discounts the venue runs ("15% off for selected items"). They are not in the assortment feed: the venue page data lists them with
+// the item ids they cover. Returns [{ fraction, amount, items, cats, onOptions }]; [] when the page data cannot be read.
+function woltCampaigns_(slug) {
+  try {
+    const res = UrlFetchApp.fetch(`https://consumer-api.wolt.com/order-xp/web/v1/venue/slug/${slug}/dynamic/?lat=${BOLT_GEO.lat}&lon=${BOLT_GEO.lng}`,
+      { muteHttpExceptions: true, headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' } });
+    if (res.getResponseCode() !== 200) return [];
+    const list = (JSON.parse(res.getContentText()).venue_raw || {}).discounts || [];
+    return list.filter(x => x.effects && x.effects.item_discount).filter(x => {
+      const c = x.conditions || {};                                  // only plain item discounts: no minimum basket, no Wolt+ only, delivery orders included
+      return !c.has_wolt_plus && (!c.delivery_methods || c.delivery_methods.includes('homedelivery')) && (c.basket_contains || []).every(b => !b.min_amount);
+    }).map(x => {
+      const e = x.effects.item_discount, inc = e.include || {};
+      return { fraction: e.fraction || 0, amount: (e.amount_per_item || 0) / 100, items: inc.items ? new Set(inc.items) : null, cats: inc.categories ? new Set(inc.categories) : null, onOptions: e.exclude_options === false };
+    });
+  } catch (e) { Logger.log('woltCampaigns: ' + e.message); return []; }
+}
+
+// Standard rows of a Wolt assortment. The price the app shows = the item + the cheapest choice of every required option group (the can in
+// a combo); a venue campaign takes its % off the item only (not the options, unless the campaign says so). Original price = before the discount.
+function woltRows_(d, campaigns) {
+  const catOf = {}, catIds = {}, optOf = {};
+  d.categories.forEach(c => (c.item_ids || []).forEach(id => { catOf[id] = c.name; (catIds[id] = catIds[id] || []).push(c.id); }));
+  (d.options || []).forEach(o => optOf[o.id] = o);
+  const round2 = x => Math.round(x * 100) / 100;
+  const required = it => (it.options || []).reduce((sum, g) => {
+    const min = g.multi_choice_config && g.multi_choice_config.total_range ? g.multi_choice_config.total_range.min : 0, o = optOf[g.option_id];
+    if (!(min > 0) || !o) return sum;
+    const ps = (o.values || []).map(v => Number(v.price) || 0);
+    return sum + (ps.length ? Math.min(...ps) * min / 100 : 0);
+  }, 0);
+  const rows = [STD_HEADER], seen = {};
   d.items.forEach(it => { const n = it.name.trim(); seen[n] = (seen[n] || 0) + 1; });
   d.items.forEach(it => {
-    const n = it.name.trim(), cat = catOf[it.id] || '';
-    const orig = it.original_price && it.original_price > it.price ? it.original_price / 100 : '';
-    rows.push([seen[n] > 1 && cat ? `${n} (${cat})` : n, it.price / 100, cat, it.id, it.disabled_info ? 'epuizat' : '', orig]);   // disabled_info = sold out / unavailable
+    const n = it.name.trim(), cat = catOf[it.id] || '', base = it.price / 100, extra = base > 0 ? required(it) : 0;
+    const own = it.original_price && it.original_price > it.price;                // discount set on the item itself
+    const camp = own ? null : campaigns.find(c => (c.items && c.items.has(it.id)) || (c.cats && (catIds[it.id] || []).some(k => c.cats.has(k))));
+    let price = base + extra, orig = (own ? it.original_price / 100 : base) + extra, disc = own ? Math.round((1 - base / (it.original_price / 100)) * 100) : 0;
+    if (camp) {
+      const cut = camp.fraction ? (camp.onOptions ? (base + extra) : base) * camp.fraction : camp.amount;
+      price = base + extra - cut;
+      disc = camp.fraction ? Math.round(camp.fraction * 100) : Math.round(cut / orig * 100);
+    }
+    rows.push(stdRow(seen[n] > 1 && cat ? `${n} (${cat})` : n, round2(price), round2(orig), disc, cat, it.disabled_info ? 'epuizat' : '', it.id));   // disabled_info = sold out / unavailable
   });
-  LAST_META = woltMeta(venueUrl);
   return rows;
 }
 

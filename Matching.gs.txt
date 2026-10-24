@@ -93,7 +93,7 @@ function prefillSheet(sheetName, marker, onlyNew) {       // onlyNew: fuzzy-fill
 // name; price = column number of the price; type/typeIs = only rows whose column `type` equals `typeIs` count.
 // Add { tab: 'Breakfast', price: 2 } to benchmark breakfast items too.
 const COMPMAP_OWN_SOURCES = [
-  { tab: 'Burgerbrasov',     price: 2 },                                                  // restaurant site: A name, B price
+  { tab: 'Burgerbrasov',     price: 3 },                                                  // restaurant site (standard layout): A name, C price
   { tab: 'MASTER Twoguys',   price: 3, type: 15, typeIs: 'Produs din lista' },            // Mypassage list: A name, C price, O row type
   { tab: 'TwoGuys Home',     price: 2 },                                                  // master tabs: A name, B reference price
   { tab: 'TwoGuys Delivery', price: 2 },
