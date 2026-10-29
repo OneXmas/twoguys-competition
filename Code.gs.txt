@@ -811,6 +811,13 @@ function GLOVO_MENU(storeUrl) {
 }
 
 
+// Variant naming shared by the site readers (same as burgerbrasov.ro): "X – Single" -> "X", "X – Meniu" -> "Meniu X", any other option -> "X – option"
+function variantName_(name, opt) {
+  opt = String(opt || "").trim();
+  if (!opt || /^single$/i.test(opt)) return name;
+  return /^meniu$/i.test(opt) && !/^meniu/i.test(name) ? `Meniu ${name}` : `${name} – ${opt}`;
+}
+
 function WOO_MENU(siteUrl) {
   const base = siteUrl.replace(/\/+$/, '');
   const hdr = { muteHttpExceptions: true, headers: { 'User-Agent': 'Mozilla/5.0' } };
@@ -837,7 +844,7 @@ function WOO_MENU(siteUrl) {
   products.forEach(p => rows.push(wooRow(decode(p.name), p, p.categories, p.id)));
   (variations || []).forEach(v => {
     const opt = decode((v.variation || '').replace(/^[^:]+:\s*/, ''));       // "Extra: Cu parmezan" -> "Cu parmezan"
-    rows.push(wooRow(`${decode(v.name)} – ${opt}`, v, v.categories || [], v.id));
+    rows.push(wooRow(variantName_(decode(v.name), opt), v, v.categories || [], v.id));
   });
   return rows;
 }

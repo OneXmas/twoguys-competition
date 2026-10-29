@@ -9,7 +9,7 @@ function JSONLD_MENU(pageUrl) {
     for (const sec of d.hasMenuSection || []) {
       for (const it of sec.hasMenuItem || []) {
         const offers = Array.isArray(it.offers) ? it.offers : it.offers ? [it.offers] : [];
-        if (offers.length > 1) offers.forEach(o => rows.push(stdRow(`${it.name} – ${o.name}`, Number(o.price), 0, 0, sec.name)));
+        if (offers.length > 1) offers.forEach(o => rows.push(stdRow(variantName_(it.name, o.name), Number(o.price), 0, 0, sec.name)));
         else rows.push(stdRow(it.name, Number(offers[0] ? offers[0].price : it.price), 0, 0, sec.name));
       }
     }
@@ -124,6 +124,32 @@ function SITE_MENU(url) {
   const html = res.getContentText();
   const strip = t => t.replace(/<[^>]+>/g, '').replace(/&nbsp;|\u00a0/g, ' ').replace(/&amp;/g, '&').replace(/&#8211;|&#8217;/g, "'").replace(/\s+/g, ' ').trim();
   const rows = [STD_HEADER];
+
+  // 00. burgerbrasov.ro menu feed (the page's data-menu attribute): has every variant, so "Meniu <burger>" gets its own row.
+  const feed = (html.match(/data-menu="([^"]+)"/) || [])[1];
+  if (feed) {
+    try {
+      const get = u => JSON.parse(UrlFetchApp.fetch(u.replace(/&amp;/g, '&'), { muteHttpExceptions: true, headers: { 'User-Agent': 'Mozilla/5.0' } }).getContentText());
+      const menu = get(feed), state = (() => { try { return get(html.match(/data-state="([^"]+)"/)[1]); } catch (e) { return {}; } })();
+      const sold = new Set(state.soldout || []), cats = {};
+      (menu.categories || []).forEach(c => cats[c.slug] = c.name);
+      const count = {}, seenFeed = new Set();
+      (menu.items || []).forEach(it => count[it.name] = (count[it.name] || 0) + 1);
+      (menu.items || []).forEach(it => {
+        const cat = cats[it.cat] || '', out = it.status === 'soldout' || sold.has(it.id) ? 'epuizat' : '';
+        const base = count[it.name] > 1 && cat ? `${it.name} (${cat})` : it.name;
+        (it.variants || []).forEach(v => {
+          if (!(v.price > 0)) return;
+          const isMenu = (it.variants.length > 1 || v.id === 'meniu') && /^meniu$/i.test(v.name);
+          const name = isMenu && !/^meniu\b/i.test(base) ? `Meniu ${base}` : base;
+          if (seenFeed.has(name)) return;                         // the same item listed twice in one category
+          seenFeed.add(name);
+          rows.push(stdRow(name, v.price / 100, 0, 0, cat, out, `${it.id}:${v.id}`));
+        });
+      });
+      if (rows.length > 1) return rows;
+    } catch (e) { Logger.log('burgerbrasov feed: ' + e.message); }
+  }
 
   // 0. burgerbrasov.ro cards (2026 redesign): <h2 section> / <h3 bb-cat__title> / <article bb-card> with name button and "NN lei" price.
   // A family card ("Limonade", "de la 22 lei") is one row at its lowest price. A dish shown under "Special azi" and in its menu section is kept once.
