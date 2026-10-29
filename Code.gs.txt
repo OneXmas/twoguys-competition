@@ -322,8 +322,12 @@ function refreshSources() {
     if (cfg.midday) { status[cfg.sheet] = ''; continue; }   // refreshed by middayRefresh()
     if (cfg.fn && cfg.url) {
       let data;
-      LAST_META = null;
-      try { data = this[cfg.fn](cfg.url); } catch (e) { data = 'ERR ' + e.message; }
+      for (let attempt = 0; attempt < 3; attempt++) {                // Glovo / Wolt / the site sometimes answer 403/429/timeout once: retry after a pause
+        if (attempt) Utilities.sleep(attempt * 4000);
+        LAST_META = null;
+        try { data = this[cfg.fn](cfg.url); } catch (e) { data = 'ERR ' + e.message; }
+        if (Array.isArray(data) && data.length > 1) break;
+      }
       if (Array.isArray(data) && data.length > 1) {
         writeDataTab_(sh, data);
         writeMeta(ss, cfg.sheet);                                   // Glovo / Wolt rating & fee (Bolt is written by middayRefresh)
@@ -567,7 +571,7 @@ function dailyCheck() {
     const failed = fetchErr || errCount > 0 || count === 0 || (!scheduledTab && prev && count < Object.keys(prev).length * 0.5);
 
     if (failed) {
-      logRows.push([today, cfg.sheet, count, 'FETCH FAILED' + (fetchErr ? ` (${fetchErr})` : errCount ? ` (${errCount} error cells)` : '')]);
+      logRows.push([today, cfg.sheet, count, 'FETCH FAILED' + (fetchErr ? ` (${fetchErr})` : errCount ? ` (${errCount} error cells)` : count === 0 ? ' (0 produse valide)' : ` (${count} produse față de ${Object.keys(prev || {}).length} ieri)`)]);
       Object.values(was).forEach(r => newSnap.push([cfg.sheet, r.key, r.name, r.price, r.disc, r.first, r.miss, r.cat || '']));
       continue;
     }

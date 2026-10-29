@@ -97,9 +97,10 @@ function sendAlert(today, changes, logRows) {
   }
 
   const failed = logRows.filter(r => String(r[3]).startsWith('FETCH'));
+  const reason = r => String(r[3]).replace(/^FETCH FAILED\s*/, '').replace(/^\((.*)\)$/, '$1');   // e.g. "HTTP 403", "NO ITEMS", "12 error cells"
   const warn = failed.length
     ? `<div style="margin-top:16px;padding:10px;background:#fef3c7;border-left:4px solid #f59e0b;font-size:13px;text-align:left;">
-        ⚠️ Neverificat azi (eroare la citire): <b>${esc(failed.map(r => displayName(r[1])).join(', '))}</b></div>` : '';
+        ⚠️ Neverificat azi (eroare la citire): ${failed.map(r => `<b>${esc(displayName(r[1]))}</b>${reason(r) ? ` <span style="color:#6b7280;">${esc(reason(r))}</span>` : ''}`).join(', ')}</div>` : '';
 
 
   const html = `

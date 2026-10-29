@@ -125,6 +125,21 @@ function SITE_MENU(url) {
   const strip = t => t.replace(/<[^>]+>/g, '').replace(/&nbsp;|\u00a0/g, ' ').replace(/&amp;/g, '&').replace(/&#8211;|&#8217;/g, "'").replace(/\s+/g, ' ').trim();
   const rows = [STD_HEADER];
 
+  // 0. burgerbrasov.ro cards (2026 redesign): <h2 section> / <h3 bb-cat__title> / <article bb-card> with name button and "NN lei" price.
+  // A family card ("Limonade", "de la 22 lei") is one row at its lowest price. A dish shown under "Special azi" and in its menu section is kept once.
+  const cardRe = /<h2 class="bb-section__title">([\s\S]*?)<\/h2>|<h3 class="bb-cat__title"[^>]*>([\s\S]*?)<\/h3>|<article class="bb-card\b[\s\S]*?<button[^>]*class="bb-card__open"[^>]*>([\s\S]*?)<\/button>[\s\S]*?<p class="bb-card__price">([\s\S]*?)<\/p>/g;
+  const seenCard = new Set();
+  let section = '', sub = '', c;
+  while ((c = cardRe.exec(html)) !== null) {
+    if (c[1] != null) { section = strip(c[1]); sub = ''; continue; }
+    if (c[2] != null) { sub = strip(c[2]); continue; }
+    const name = strip(c[3]), pm = strip(c[4].replace(/<small>[\s\S]*?<\/small>/g, '')).match(/(\d+(?:[.,]\d+)?)/);
+    if (!name || !pm || seenCard.has(name)) continue;
+    seenCard.add(name);
+    rows.push(stdRow(name, parseFloat(pm[1].replace(',', '.')), 0, 0, sub || section));
+  }
+  if (rows.length > 1) return rows;
+
   // 1. catalogue items
   const cat = /av-catalogue-title'>([\s\S]*?)<\/div>\s*<div class='av-catalogue-price'>([\s\S]*?)<\/div>/g;
   let m;
