@@ -206,9 +206,10 @@ function rebuildBreakfastMaster() { rebuildMasterFrom('Breakfast', 'Br. by Passa
 
 // Self-maintaining master: when a platform renames a product, the master cell that pointed at the old name follows it;
 // blank cells are filled the same way buildRefSheets does. Returns true if any cell changed. Nothing is ever removed.
-function syncMasterNames(r, rows, tabs, tabIdx, prices, renamed) {
+function syncMasterNames(r, rows, tabs, tabIdx, prices, renamed, skipTabs) {
   let changed = false;
   tabs.forEach((tab, i) => {
+    if (skipTabs && skipTabs.has(tab)) return;                                     // read failed / partial today: do not "rename" on bad data
     const c = tabIdx[i], pool = Object.keys(prices[i]);
     const used = new Set(rows.map(row => String(row[c] || '').replace(/^[~≈]/, '').trim()).filter(Boolean));
     for (const row of rows) {
@@ -241,7 +242,15 @@ function syncMasterNames(r, rows, tabs, tabIdx, prices, renamed) {
 }
 
 function ownShopsReport() {
+  const T0 = Date.now(), BUDGET = 270000;           // Apps Script stops at 360 s: stop reading/matching before that and still send the email
   const ss = SpreadsheetApp.getActive(), today = Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+  const failedTabs = new Set();                     // tabs dailyCheck could not read today (RunLog)
+  const logSh = ss.getSheetByName(LOG_SHEET);
+  if (logSh && logSh.getLastRow() > 1) logSh.getRange(Math.max(2, logSh.getLastRow() - 199), 1, Math.min(200, logSh.getLastRow() - 1), 4).getValues().forEach(([d, tab, , st]) => {
+    const day = d instanceof Date ? Utilities.formatDate(d, ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd') : String(d).slice(0, 10);
+    if (day === today && String(st).startsWith('FETCH')) failedTabs.add(String(tab));
+  });
+  const notes = [];                                 // shown at the bottom of the email
   const listPrices = tab => {                       // name -> { list price (discount ignored), disc, oos, cat, pos }
     const cfg = COMPETITORS.find(c => c.sheet === tab), sh = ss.getSheetByName(tab), m = {};
     if (!cfg || !sh || sh.getLastRow() < 2) return m;
@@ -270,9 +279,15 @@ function ownShopsReport() {
   const hist = ss.getSheetByName(HISTORY_SHEET);
   let histFrom = '';
   if (hist && hist.getLastRow() > 1) {
-    const from = Math.max(2, hist.getLastRow() - 199999), dayOf = v => v instanceof Date ? Utilities.formatDate(v, ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd') : String(v).slice(0, 10);
-    const run = {};
-    hist.getRange(from, 1, hist.getLastRow() - from + 1, 5).getValues().forEach(([d, tab, item, , disc]) => {
+    const dayOf = v => v instanceof Date ? Utilities.formatDate(v, ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd') : String(v).slice(0, 10);
+    const run = {}, CHUNK = 25000, lastRow = hist.getLastRow(), chunks = [];
+    for (let end = lastRow; end >= Math.max(2, lastRow - 199999) && Date.now() - T0 < 90000; end -= CHUNK) {   // newest rows first; stop at 90 s
+      const start = Math.max(2, end - CHUNK + 1, lastRow - 199999);
+      chunks.unshift(hist.getRange(start, 1, end - start + 1, 5).getValues());
+      if (start === 2 || start <= lastRow - 199999) break;
+    }
+    if (!chunks.length || chunks.reduce((n, c) => n + c.length, 0) < Math.min(lastRow - 1, 200000)) notes.push('Istoricul reducerilor citit parțial (timp) — zilele de reducere pot fi subestimate.');
+    [].concat(...chunks).forEach(([d, tab, item, , disc]) => {
       if (!ownTabs.has(tab)) return;
       const day = dayOf(d), k = tab + '|' + String(item).trim();
       if (!histFrom || day < histFrom) histFrom = day;
@@ -288,6 +303,7 @@ function ownShopsReport() {
   };
 
   for (const r of OWN_REPORTS) {
+    if (Date.now() - T0 > BUDGET) { notes.push(`Raport oprit la limita de timp — nerulat: ${r.name}.`); continue; }
     const map = ss.getSheetByName(r.map); if (!map || map.getLastRow() < 2) continue;
     const headers = map.getRange(1, 1, 1, map.getLastColumn()).getValues()[0].map(String).filter(Boolean);
     const tabs = headers.filter(h => COMPETITORS.some(c => c.sheet === h));
@@ -295,7 +311,8 @@ function ownShopsReport() {
     const tabIdx = tabs.map(t => headers.indexOf(t));
     const rowsRange = map.getRange(2, 1, map.getLastRow() - 1, headers.length), rows = rowsRange.getValues();
     const prices = tabs.map(listPrices);
-    if (syncMasterNames(r, rows, tabs, tabIdx, prices, renamed)) rowsRange.setValues(rows);   // platform renamed a product → follow it
+    if (syncMasterNames(r, rows, tabs, tabIdx, prices, renamed, failedTabs)) rowsRange.setValues(rows);   // platform renamed a product → follow it
+    tabs.filter(t => failedTabs.has(t)).forEach(t => { const n = `${platform(t)} neverificat azi (eroare la citire) — „lipsă” poate fi fals.`; if (!notes.includes(n)) notes.push(n); });
     const mappedPerTab = tabs.map(() => new Set());
     const issues = [], extras = [];                 // { cat, pos, name, html, tg }
     let nameDiffs = 0;
@@ -365,7 +382,9 @@ function ownShopsReport() {
   if (renamed.length) html += `<div style="font-size:13px;font-weight:700;margin:18px 0 4px;color:#6b7280;">Nume actualizate automat în lista master (platforma a redenumit produsul):</div>
       <table width="100%" cellpadding="6" cellspacing="0" style="border:1px solid #e5e7eb;font-size:13px;"><tr style="background:${col.headerBg};color:#fff;"><th align="left">Tab</th><th align="left">Platformă</th><th align="left">Vechi</th><th align="left">Nou</th></tr>
       ${renamed.map(x => `<tr><td>${esc(x.map)}</td><td>${esc(platform(x.tab))}</td><td>${esc(x.from)}</td><td>${esc(x.to)}</td></tr>`).join('')}</table>`;
-  if (!total && !renamed.length) return;
+  if (notes.length) html += `<div style="margin-top:16px;padding:10px;background:#fef3c7;border-left:4px solid #f59e0b;font-size:13px;">⚠️ ${notes.map(esc).join('<br>⚠️ ')}</div>`;
+  Logger.log(`ownShopsReport: ${Math.round((Date.now() - T0) / 1000)} s`);
+  if (!total && !renamed.length && !notes.length) return;
   if (CFG().telegramOwn) tgSend(`🏪 <b>Magazine proprii: ${total} probleme</b> (${today})\n` + tg.join('\n'));
   const body = `<div style="background:#f3f4f6;padding:20px 8px;font-family:Arial,sans-serif;"><div style="max-width:720px;margin:0 auto;background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;">
     <div style="height:5px;background:${col.accent};"></div><div style="padding:20px;text-align:center;border-bottom:1px solid #e5e7eb;"><div style="font-size:18px;font-weight:800;">Verificare magazine proprii</div><div style="font-size:13px;color:#6b7280;">${today} · X = lipsă · preț afișat = diferit de lista master · „nume:” = alt nume pe platformă · „epuizat” = oprit pe o platformă dar activ pe celelalte</div></div>

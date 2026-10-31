@@ -321,13 +321,19 @@ function refreshSources() {
     if (!sh) continue;
     if (cfg.midday) { status[cfg.sheet] = ''; continue; }   // refreshed by middayRefresh()
     if (cfg.fn && cfg.url) {
-      let data;
+      let data, best;
+      const have = Math.max(sh.getLastRow() - 1, 0), partial = d => !CFG().scheduledTabs.includes(cfg.sheet) && have >= 10 && d.length - 1 < have * 0.5;
       for (let attempt = 0; attempt < 3; attempt++) {                // Glovo / Wolt / the site sometimes answer 403/429/timeout once: retry after a pause
         if (attempt) Utilities.sleep(attempt * 4000);
         LAST_META = null;
         try { data = this[cfg.fn](cfg.url); } catch (e) { data = 'ERR ' + e.message; }
-        if (Array.isArray(data) && data.length > 1) break;
+        if (Array.isArray(data) && data.length > 1) {
+          if (!partial(data)) break;                                 // a half-loaded menu (e.g. 43 of 104) counts as a failed read: retry
+          if (!best || data.length > best.length) best = data;
+          data = 'PARTIAL';
+        }
       }
+      if (data === 'PARTIAL') data = `${best.length - 1} produse față de ${have} ieri – tab păstrat neschimbat`;   // yesterday's data stays in the tab, dailyCheck flags it
       if (Array.isArray(data) && data.length > 1) {
         writeDataTab_(sh, data);
         writeMeta(ss, cfg.sheet);                                   // Glovo / Wolt rating & fee (Bolt is written by middayRefresh)
