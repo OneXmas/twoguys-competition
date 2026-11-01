@@ -24,7 +24,7 @@ Daily competitor email, own-shops consistency report, CompMap price comparison. 
 - Notes for the user: always name the file that holds each function to run; link every file they must paste.
 
 ## Sheet knowledge
-- Triggers: dailyCheck 10:00, middayRefresh 12:00 (Bolt), ownShopsReport 13:00, weekly digests Monday 08:00 / 09:00.
+- Triggers: dailyCheck 10:00, middayRefresh 12:00 (Bolt), ownShopsReport 13:00, eveningRefresh 16:00 (`TwoGuys - G` only: Glovo shows just breakfast until 15:00 Wed–Sun), weekly digests Monday 08:00 / 09:00.
 - History tab = one row per item per day (used for discount days); `_Snapshot` = yesterday's state; `_Removed` = delisted
   competitor items kept 60 days.
 - Tab-by-tab description: `docs/manual-tabs.md`. Own-shops rules: `docs/own-shops-consistency.md`.

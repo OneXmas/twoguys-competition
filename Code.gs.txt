@@ -40,7 +40,8 @@ const COMPETITORS = [
   { sheet: 'Burgerbrasov', ...STD_COLS, fn: 'SITE_MENU', url: 'https://burgerbrasov.ro/' },
   { sheet: 'Mypassage',    ...STD_COLS, fn: 'WOO_MENU', url: 'https://mypassage.ro' },
   // own platforms
-  { sheet: 'TwoGuys - G',  ...STD_COLS, fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/two-guys-delivery' },
+  // Wed–Sun 09:00–15:00 this Glovo store shows only the breakfast menu (~41 items), so it is read at 16:00 by eveningRefresh()
+  { sheet: 'TwoGuys - G',  ...STD_COLS, fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/two-guys-delivery', evening: true },
   { sheet: 'TwoGuys - W',  ...STD_COLS, fn: 'WOLT_MENU',  url: 'https://wolt.com/ro/rou/brasov/restaurant/two-guys-delivery-67dac8fa3d53c71097395624' },
   { sheet: 'TwoGuys - B',  ...STD_COLS, fn: 'BOLT_MENU', url: 'https://food.bolt.eu/ro-ro/802-brasov/p/110855-two-guys-delivery/', midday: true },
   { sheet: 'TheSmash - G', ...STD_COLS, fn: 'GLOVO_MENU', url: 'https://glovoapp.com/ro/ro/brasov/stores/the-smash-by-two-guys-brv' },
@@ -319,7 +320,7 @@ function refreshSources() {
   for (const cfg of COMPETITORS) {
     const sh = ss.getSheetByName(cfg.sheet);
     if (!sh) continue;
-    if (cfg.midday) { status[cfg.sheet] = ''; continue; }   // refreshed by middayRefresh()
+    if (cfg.midday || cfg.evening) { status[cfg.sheet] = ''; continue; }   // refreshed by middayRefresh() / eveningRefresh()
     if (cfg.fn && cfg.url) {
       let data, best;
       const have = Math.max(sh.getLastRow() - 1, 0), partial = d => !CFG().scheduledTabs.includes(cfg.sheet) && have >= 10 && d.length - 1 < have * 0.5;
@@ -479,12 +480,12 @@ function setupSettings() {
 
 // One-time: (re)create all time triggers. Safe to re-run: existing triggers for these functions are replaced.
 function installTriggers() {
-  const plan = { dailyCheck: 10, middayRefresh: 12, ownShopsReport: 13 };   // hour of day (spreadsheet time zone)
+  const plan = { dailyCheck: 10, middayRefresh: 12, ownShopsReport: 13, eveningRefresh: 16 };   // hour of day (spreadsheet time zone)
   const weekly = { weeklyDigest: 8, weeklyMetaReport: 9 };                     // Monday, hour of day
   ScriptApp.getProjectTriggers().forEach(t => { if (t.getHandlerFunction() in plan || t.getHandlerFunction() in weekly) ScriptApp.deleteTrigger(t); });
   Object.entries(plan).forEach(([fn, h]) => ScriptApp.newTrigger(fn).timeBased().everyDays(1).atHour(h).create());
   Object.entries(weekly).forEach(([fn, h]) => ScriptApp.newTrigger(fn).timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(h).create());
-  Logger.log('Triggers: dailyCheck 10:00, middayRefresh 12:00, ownShopsReport 13:00, weeklyDigest Monday 08:00, weeklyMetaReport Monday 09:00');
+  Logger.log('Triggers: dailyCheck 10:00, middayRefresh 12:00, ownShopsReport 13:00, eveningRefresh 16:00, weeklyDigest Monday 08:00, weeklyMetaReport Monday 09:00');
 }
 const REMOVED_SHEET = '_Removed';
 const REPORT_HEADERS = ['Date', 'Competitor', 'Change', 'Item', 'Old price', 'New price', 'Diff', 'Diff %'];
@@ -901,9 +902,12 @@ function decode(t) {
 const COMPMAP_SHEET = 'CompMap';
 
 
-function middayRefresh() {
+function middayRefresh() { refreshTabs_(c => c.midday); }
+function eveningRefresh() { refreshTabs_(c => c.evening); }   // 16:00: after the breakfast category closes (15:00) the Glovo store shows the full menu
+
+function refreshTabs_(pick) {
   const ss = SpreadsheetApp.getActive();
-  for (const cfg of COMPETITORS.filter(c => c.midday)) {
+  for (const cfg of COMPETITORS.filter(pick)) {
     const sh = ss.getSheetByName(cfg.sheet); if (!sh) continue;
     let data;
     for (let attempt = 1; attempt <= 3; attempt++) {

@@ -185,7 +185,7 @@ function addTabNotes() {
     if (!text && cfgOf[name]) {
       const c = cfgOf[name];
       text = (own.has(name) ? 'TAB DE DATE – magazin al nostru. ' : 'TAB DE DATE – concurent. ') + 'Conține meniul citit de script' + (c.fn ? ' cu ' + c.fn + '(' + c.url + ')' : ' prin formule IMPORTXML (nu șterge formulele din primele rânduri)') + '.\n' +
-        'Se rescrie zilnic la dailyCheck (Code.gs, 10:00)' + (c.midday ? ' și la middayRefresh (12:00, Bolt)' : '') + '. NU edita.\n' +
+        'Se rescrie zilnic la dailyCheck (Code.gs, 10:00)' + (c.midday ? ' și la middayRefresh (12:00, Bolt)' : '') + (c.evening ? ' (nu la 10:00: citit la eveningRefresh 16:00, după ce meniul de mic dejun se închide)' : '') + '. NU edita.\n' +
         'Linkul sau oprirea urmăririi se schimbă în tabul Competitors, nu aici. Tabul poate fi ascuns (Acces → Ascunde taburile de date); scriptul îl citește oricum.';
     }
     if (!text && name.indexOf(AC_SNAP) === 0) text = 'Copie tehnică a tabului „' + name.slice(AC_SNAP.length) + '”, folosită de protecția din Guard.gs (accessGuard). Ascuns. NU edita.';
